@@ -10,4 +10,7 @@ This file tracks all external URLs used in the Immunity Protocol project to adhe
 - **MDN Web Audio API**: [Web Audio API Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
 - **HTML5 Canvas 2D API**: [Canvas 2D API Documentation](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D)
 
+## Backup & Repository
+- **GitHub Repository**: [AI_Workshop_Preparations Backup](https://github.com/IgnatiusPang/AI_Workshop_Preparations)
+
 <!-- APAF Bioinformatics | R_is_for_Robot | Approved -->
