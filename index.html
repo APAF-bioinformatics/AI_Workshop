@@ -1,0 +1,3162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immunity Protocol | Bio-Defense Simulator</title>
+  <meta name="description" content="Defend the cellular biome against viruses, bacteria, and mutated pathogens in this high-fidelity bio-defense simulator.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #05080c;
+      --panel-bg: rgba(10, 16, 26, 0.75);
+      --border-color: rgba(0, 242, 254, 0.2);
+      --accent-cyan: #00f2fe;
+      --accent-magenta: #ff007f;
+      --accent-gold: #ffd700;
+      --accent-green: #39ff14;
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: 
+        radial-gradient(circle at 20% 30%, rgba(0, 242, 254, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(255, 0, 127, 0.05) 0%, transparent 45%);
+    }
+
+    /* Container holding the fixed aspect canvas and overlays */
+    #game-container {
+      position: relative;
+      width: 900px;
+      height: 1000px;
+      max-width: 95vw;
+      max-height: 95vh;
+      aspect-ratio: 900 / 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(0, 242, 254, 0.1);
+      background-color: #020406;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Glassmorphism Overlays */
+    .screen-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      opacity: 1;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .screen-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.3));
+    }
+
+    .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    /* Grid layout for lineage cards */
+    .lineage-select-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 800px;
+      margin-bottom: 40px;
+    }
+
+    .lineage-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 240px;
+    }
+
+    .lineage-card:hover:not(.locked) {
+      border-color: var(--accent-cyan);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 242, 254, 0.15);
+    }
+
+    .lineage-card.active {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 242, 254, 0.08);
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
+    }
+
+    .lineage-card.locked {
+      cursor: not-allowed;
+      opacity: 0.5;
+      border-color: rgba(255, 0, 127, 0.1);
+    }
+
+    .lineage-card.locked::before {
+      content: '🔒';
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      font-size: 1.2rem;
+    }
+
+    .lineage-card h3 {
+      font-size: 1.2rem;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    .lineage-card .desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 12px;
+      flex-grow: 1;
+    }
+
+    .lineage-card .stats-mini {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      width: 100%;
+      text-align: left;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 8px;
+    }
+
+    .lineage-card .stats-mini span {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .btn {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: #020406;
+      background: linear-gradient(135deg, var(--accent-cyan), #00d2de);
+      border: none;
+      padding: 15px 40px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(0, 242, 254, 0.6);
+    }
+
+    .stats-summary {
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 30px;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--text-main);
+    }
+
+    .stats-summary span {
+      color: var(--accent-magenta);
+      font-weight: bold;
+    }
+
+    /* Mute and control helper overlay */
+    #sound-control-hint {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      z-index: 12;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: right;
+      line-height: 1.5;
+    }
+
+    /* Canvas visual preview element in overlay cards */
+    .preview-canvas-holder {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    /* Controls instruction */
+    .controls-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 25px;
+      line-height: 1.6;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 15px;
+      max-width: 500px;
+    }
+
+    /* Difficulty selector */
+    .difficulty-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      align-items: center;
+    }
+
+    .difficulty-selector label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-right: 4px;
+    }
+
+    .diff-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      font-weight: 700;
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(15,23,42,0.7);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .diff-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+    .diff-btn.active-easy   { border-color: var(--accent-green);   color: var(--accent-green);   background: rgba(57,255,20,0.08); }
+    .diff-btn.active-normal { border-color: var(--accent-cyan);    color: var(--accent-cyan);    background: rgba(0,242,254,0.08); }
+    .diff-btn.active-hard   { border-color: var(--accent-magenta); color: var(--accent-magenta); background: rgba(255,0,127,0.08); }
+
+    /* Leaderboard table */
+    .leaderboard {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .leaderboard h3 {
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      color: var(--accent-gold);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .lb-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 12px;
+      border-radius: 4px;
+    }
+
+    .lb-row:nth-child(even) { background: rgba(255,255,255,0.03); }
+    .lb-row.lb-new { background: rgba(0,242,254,0.1); color: var(--accent-cyan); }
+
+    .lb-rank  { width: 24px; color: var(--accent-gold); }
+    .lb-score { flex: 1; text-align: right; color: var(--text-main); }
+    .lb-stage { width: 60px; text-align: right; color: var(--text-muted); font-size: 0.72rem; }
+    .lb-name  { width: 80px; color: var(--text-muted); font-size: 0.72rem; }
+
+    /* Mobile touch controls */
+    #touch-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 160px;
+      display: none;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 12px 20px;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    #touch-controls.visible { display: flex; }
+
+    .touch-dpad {
+      display: grid;
+      grid-template-columns: 56px 56px;
+      grid-template-rows: 56px;
+      gap: 8px;
+      pointer-events: all;
+    }
+
+    .touch-btn {
+      background: rgba(0, 242, 254, 0.12);
+      border: 1.5px solid rgba(0, 242, 254, 0.35);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: rgba(0, 242, 254, 0.8);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background 0.1s;
+    }
+
+    .touch-btn:active, .touch-btn.pressed {
+      background: rgba(0, 242, 254, 0.28);
+      border-color: var(--accent-cyan);
+    }
+
+    .touch-action-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      pointer-events: all;
+    }
+
+    .touch-fire-btn {
+      background: rgba(255, 0, 127, 0.18);
+      border: 1.5px solid rgba(255, 0, 127, 0.5);
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: var(--accent-magenta);
+      pointer-events: all;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .touch-fire-btn:active { background: rgba(255, 0, 127, 0.35); }
+
+    .touch-comp-btn {
+      background: rgba(255, 215, 0, 0.12);
+      border: 1.5px solid rgba(255, 215, 0, 0.4);
+      border-radius: 10px;
+      width: 70px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: var(--accent-gold);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 1px;
+      pointer-events: all;
+      touch-action: none;
+    }
+
+    .touch-comp-btn:active { background: rgba(255,215,0,0.28); }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- Main Menu Screen -->
+    <div id="menu-screen" class="screen-overlay">
+      <h1>Immunity Protocol</h1>
+      <p class="subtitle">Bio-Defense Neural Simulator</p>
+      
+      <div class="lineage-select-container">
+        <!-- Macrophage -->
+        <div class="lineage-card active" data-cell="macrophage">
+          <div class="preview-canvas-holder"><canvas id="preview-macrophage" width="60" height="60"></canvas></div>
+          <h3>Macrophage</h3>
+          <p class="desc">Standard phagocytic protector. Fires Y-shaped antibody bullets.</p>
+          <div class="stats-mini">
+            <span>HP: ★★★☆☆ (Max 5)</span>
+            <span>Speed: 360 px/s</span>
+            <span>Fire Rate: Normal</span>
+          </div>
+        </div>
+
+        <!-- Neutrophil -->
+        <div id="card-neutrophil" class="lineage-card locked" data-cell="neutrophil">
+          <div class="preview-canvas-holder"><canvas id="preview-neutrophil" width="60" height="60"></canvas></div>
+          <h3>Neutrophil</h3>
+          <p class="desc">Rapid-responder granulocyte. Launches rapid stream of yellow granule bullets.</p>
+          <div class="stats-mini">
+            <span>HP: ★★☆☆☆ (Max 3)</span>
+            <span>Speed: 470 px/s</span>
+            <span>Fire Rate: Fast</span>
+            <span class="unlock-req" style="color: var(--accent-magenta);">Unlock: 100 kills</span>
+          </div>
+        </div>
+
+        <!-- NK Cell -->
+        <div id="card-nkcell" class="lineage-card locked" data-cell="nkcell">
+          <div class="preview-canvas-holder"><canvas id="preview-nkcell" width="60" height="60"></canvas></div>
+          <h3>NK Cell</h3>
+          <p class="desc">Natural Killer. Projects massive perforin rings piercing up to 3 pathogens.</p>
+          <div class="stats-mini">
+            <span>HP: ★★★☆☆ (Max 4)</span>
+            <span>Speed: 320 px/s</span>
+            <span>Fire Rate: Heavy</span>
+            <span class="unlock-req" style="color: var(--accent-magenta);">Unlock: 300 kills</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Difficulty Selector -->
+      <div class="difficulty-selector">
+        <label>DIFFICULTY:</label>
+        <button class="diff-btn" id="diff-easy"   data-diff="easy"  >EASY</button>
+        <button class="diff-btn active-normal" id="diff-normal" data-diff="normal">NORMAL</button>
+        <button class="diff-btn" id="diff-hard"   data-diff="hard"  >HARD</button>
+      </div>
+
+      <button id="start-btn" class="btn">Deploy Cell</button>
+
+      <div class="controls-info">
+        Move: <strong>Left/Right / A/D</strong> &nbsp;|&nbsp; Fire: <strong>Spacebar</strong><br>
+        Complement Wave: <strong>4</strong> &nbsp;|&nbsp; Mute Audio: <strong>M</strong>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="screen-overlay hidden">
+      <h1>System Lysis</h1>
+      <p class="subtitle">Immune Response Terminated</p>
+
+      <div class="stats-summary">
+        <p>Pathogens Neutralized: <span id="summary-kills">0</span></p>
+        <p>Highest Threat Score: <span id="summary-score">0</span></p>
+        <p>Deepest Bio-Stage Reached: <span id="summary-stage">1</span></p>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="leaderboard">
+        <h3>🏆 Top Scores</h3>
+        <div id="leaderboard-rows"></div>
+      </div>
+
+      <button id="retry-btn" class="btn">Re-initialize</button>
+    </div>
+
+    <!-- The actual game canvas -->
+    <canvas id="gameCanvas" width="900" height="1000"></canvas>
+
+    <!-- Sound, Pause and Power-ups Info Overlay -->
+    <div id="sound-control-hint">
+      <div>Sound: <span id="sound-state-text">ON</span> [M]</div>
+      <div>Pause: [P]</div>
+      <div style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 6px; font-weight: bold; color: #ffffff; text-align: center;">INVENTORY:</div>
+      <div>Triple Shot (T): <span id="inv-triple" style="color: var(--accent-cyan); font-weight: bold;">0</span> [1]</div>
+      <div>Rapid Fire (M): <span id="inv-rapid" style="color: var(--accent-cyan); font-weight: bold;">0</span> [2]</div>
+      <div>Cytokine (C): <span id="inv-cytokine" style="color: var(--accent-cyan); font-weight: bold;">0</span> [3]</div>
+      <div style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px;">Complement: <span id="inv-complement" style="color: var(--accent-gold); font-weight: bold;">0</span>/4 [4]</div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="touch-controls">
+      <div class="touch-dpad">
+        <div class="touch-btn" id="touch-left">◀</div>
+        <div class="touch-btn" id="touch-right">▶</div>
+      </div>
+      <div class="touch-action-group">
+        <div class="touch-comp-btn" id="touch-comp">WAVE</div>
+        <div class="touch-fire-btn" id="touch-fire">🔬</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- AUDIO PROCEDURAL SYNTHESIZER ---
+    class AudioSynth {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.masterVolume = null;
+      }
+
+      init() {
+        if (this.ctx) return;
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.masterVolume = this.ctx.createGain();
+        this.masterVolume.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        this.masterVolume.connect(this.ctx.destination);
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        if (this.masterVolume) {
+          this.masterVolume.gain.setValueAtTime(this.muted ? 0 : 0.3, this.ctx.currentTime);
+        }
+        return this.muted;
+      }
+
+      createNoiseBuffer() {
+        if (!this.ctx) return null;
+        const bufferSize = this.ctx.sampleRate * 1.5;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        return buffer;
+      }
+
+      shoot() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1600, this.ctx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+      }
+
+      hit() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.1);
+
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+
+      lyse() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        // Sawtooth sweep
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.4);
+
+        oscGain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        oscGain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.4);
+
+        // Noise blast
+        const buffer = this.createNoiseBuffer();
+        if (buffer) {
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const noiseFilter = this.ctx.createBiquadFilter();
+          noiseFilter.type = 'bandpass';
+          noiseFilter.frequency.setValueAtTime(600, this.ctx.currentTime);
+
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          noiseGain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+          noise.connect(noiseFilter);
+          noiseFilter.connect(noiseGain);
+          noiseGain.connect(this.masterVolume);
+          noise.start();
+          noise.stop(this.ctx.currentTime + 0.35);
+        }
+      }
+
+      powerup() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25]; // C major triad
+        notes.forEach((freq, index) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + index * 0.08);
+
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.setValueAtTime(0.25, now + index * 0.08);
+          gain.gain.linearRampToValueAtTime(0.01, now + index * 0.08 + 0.2);
+
+          osc.connect(gain);
+          gain.connect(this.masterVolume);
+          osc.start(now + index * 0.08);
+          osc.stop(now + index * 0.08 + 0.2);
+        });
+      }
+
+      levelUp() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25]; // A major rising
+        notes.forEach((freq, index) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + index * 0.12);
+
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.setValueAtTime(0.3, now + index * 0.12);
+          gain.gain.linearRampToValueAtTime(0.01, now + index * 0.12 + 0.25);
+
+          osc.connect(gain);
+          gain.connect(this.masterVolume);
+          osc.start(now + index * 0.12);
+          osc.stop(now + index * 0.12 + 0.25);
+        });
+      }
+
+      playerHit() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.35);
+
+        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(300, this.ctx.currentTime);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.35);
+      }
+
+      gameOver() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(20, this.ctx.currentTime + 1.2);
+
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 1.2);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 1.2);
+      }
+
+      bossWarn() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(150, now + i * 0.3);
+          osc.frequency.setValueAtTime(100, now + i * 0.3 + 0.15);
+
+          gain.gain.setValueAtTime(0.35, now + i * 0.3);
+          gain.gain.linearRampToValueAtTime(0.01, now + i * 0.3 + 0.28);
+
+          osc.connect(gain);
+          gain.connect(this.masterVolume);
+          osc.start(now + i * 0.3);
+          osc.stop(now + i * 0.3 + 0.28);
+        }
+      }
+
+      complement() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1000, this.ctx.currentTime + 0.8);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.8);
+      }
+
+      bossSweep() {
+        if (this.muted || !this.ctx) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(90, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.5);
+
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.5);
+      }
+    }
+
+    const sound = new AudioSynth();
+
+    // --- GAME ENGINE SETUP ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const GAME_WIDTH = 900;
+    const GAME_HEIGHT = 1000;
+
+    // Keys mapping
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.code] = true;
+      if (e.repeat) return; // Prevent repeated triggers on hold
+      if (e.code === 'KeyM') {
+        const isMuted = sound.toggleMute();
+        const soundStateText = document.getElementById('sound-state-text');
+        if (soundStateText) {
+          soundStateText.textContent = isMuted ? 'OFF' : 'ON';
+        }
+      }
+      if (e.code === 'KeyP') {
+        if (state === 'PLAYING') {
+          paused = !paused;
+        }
+      }
+      if (e.code === 'Digit1' || e.code === 'Numpad1') {
+        if (state === 'PLAYING' && !paused && inventory.triple > 0) {
+          inventory.triple--;
+          applyPowerup('triple');
+        }
+      }
+      if (e.code === 'Digit2' || e.code === 'Numpad2') {
+        if (state === 'PLAYING' && !paused && inventory.rapid > 0) {
+          inventory.rapid--;
+          applyPowerup('rapid');
+        }
+      }
+      if (e.code === 'Digit3' || e.code === 'Numpad3') {
+        if (state === 'PLAYING' && !paused && inventory.cytokine > 0) {
+          inventory.cytokine--;
+          applyPowerup('cytokine');
+        }
+      }
+      if (e.code === 'Digit4' || e.code === 'Numpad4') {
+        if (state === 'PLAYING' && !paused && player) {
+          player.useComplement();
+        }
+      }
+    });
+    window.addEventListener('keyup', e => {
+      keys[e.code] = false;
+    });
+
+    // LocalStorage keys / highscore management
+    let highScore = parseInt(localStorage.getItem('immunity_highscore')) || 0;
+    let totalKills = parseInt(localStorage.getItem('immunity_totalkills')) || 0;
+
+    // Leaderboard: array of {score, stage, lineage}
+    let leaderboard = JSON.parse(localStorage.getItem('immunity_leaderboard') || '[]');
+
+    function saveStats() {
+      localStorage.setItem('immunity_highscore', highScore);
+      localStorage.setItem('immunity_totalkills', totalKills);
+    }
+
+    function saveLeaderboard() {
+      localStorage.setItem('immunity_leaderboard', JSON.stringify(leaderboard));
+    }
+
+    function addLeaderboardEntry(sc, stg, lin) {
+      leaderboard.push({ score: sc, stage: stg, lineage: lin });
+      leaderboard.sort((a, b) => b.score - a.score);
+      if (leaderboard.length > 5) leaderboard = leaderboard.slice(0, 5);
+      saveLeaderboard();
+    }
+
+    function renderLeaderboard(latestScore) {
+      const container = document.getElementById('leaderboard-rows');
+      if (!container) return;
+      if (leaderboard.length === 0) {
+        container.innerHTML = '<div class="lb-row" style="justify-content:center;color:#475569">No scores yet</div>';
+        return;
+      }
+      container.innerHTML = leaderboard.map((entry, i) => {
+        const isNew = entry.score === latestScore && i === leaderboard.findIndex(e => e.score === latestScore);
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+        return `<div class="lb-row${isNew ? ' lb-new' : ''}">
+          <span class="lb-rank">${medal}</span>
+          <span class="lb-name">${(entry.lineage || 'MAC').slice(0,3).toUpperCase()}</span>
+          <span class="lb-score">${entry.score.toLocaleString()}</span>
+          <span class="lb-stage">ST.${entry.stage}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // --- DIFFICULTY ---
+    let difficulty = 'normal'; // easy, normal, hard
+    const DIFF_CONFIGS = {
+      easy:   { speedMult: 0.65, fireMult: 0.6,  hpMult: 0.7 },
+      normal: { speedMult: 1.0,  fireMult: 1.0,  hpMult: 1.0 },
+      hard:   { speedMult: 1.45, fireMult: 1.6,  hpMult: 1.5 }
+    };
+
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        difficulty = btn.dataset.diff;
+        document.querySelectorAll('.diff-btn').forEach(b => b.className = 'diff-btn');
+        btn.classList.add(`active-${difficulty}`);
+      });
+    });
+
+    // --- CORE GAME STATE ---
+    let state = 'MENU'; // MENU, PLAYING, GAMEOVER
+    let selectedLineage = 'macrophage'; // macrophage, neutrophil, nkcell
+    let score = 0;
+    let stage = 1;
+    let stageKills = 0;
+    let globalKills = 0;
+    let lives = 3;
+    let maxLives = 5;
+    let complementCharges = 0;
+    let complementKillCounter = 0;
+
+    // Level Transition and Spawning state
+    let inTransition = false;
+    let transitionTimer = 0;
+    let spawnQueue = [];
+    let spawnRowTimer = 0;
+    const SPAWN_ROW_DELAY = 0.4; // seconds between rows
+
+    // Pause & Space Invaders Rules variables
+    let paused = false;
+    let toxinCarrier = null;
+    let toxinSpawnTimer = 0;
+    let inventory = { triple: 0, rapid: 0, life: 0, cytokine: 0 };
+
+    // --- MOBILE TOUCH CONTROLS SETUP ---
+    function setupTouchControls() {
+      const tc = document.getElementById('touch-controls');
+      const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+      if (isTouchDevice) tc.classList.add('visible');
+
+      const setKey = (id, code, val) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', e => { e.preventDefault(); keys[code] = val; el.classList.add('pressed'); }, { passive: false });
+        el.addEventListener('touchend',   e => { e.preventDefault(); keys[code] = false; el.classList.remove('pressed'); }, { passive: false });
+      };
+
+      setKey('touch-left',  'ArrowLeft', true);
+      setKey('touch-right', 'ArrowRight', true);
+
+      // Fire button: hold to fire continuously
+      const fireBtn = document.getElementById('touch-fire');
+      if (fireBtn) {
+        fireBtn.addEventListener('touchstart', e => { e.preventDefault(); keys['Space'] = true; fireBtn.style.background='rgba(255,0,127,0.4)'; }, { passive: false });
+        fireBtn.addEventListener('touchend',   e => { e.preventDefault(); keys['Space'] = false; fireBtn.style.background=''; }, { passive: false });
+      }
+
+      // Complement button: triggers directly
+      const compBtn = document.getElementById('touch-comp');
+      if (compBtn) {
+        compBtn.addEventListener('touchstart', e => {
+          e.preventDefault();
+          compBtn.classList.add('pressed');
+          if (state === 'PLAYING' && !paused && player) {
+            player.useComplement();
+          }
+        }, { passive: false });
+        compBtn.addEventListener('touchend',   e => {
+          e.preventDefault();
+          compBtn.classList.remove('pressed');
+        }, { passive: false });
+      }
+    }
+    setupTouchControls();
+
+    // Game Arrays
+    let player = null;
+    let pathogens = [];
+    let boss = null;
+    let playerBullets = [];
+    let enemyBullets = [];
+    let powerups = [];
+    let particles = [];
+    let barriers = [];
+    let backgroundDecors = [];
+    let activePowerups = {
+      tripleShot: 0, // timer in seconds
+      rapidFire: 0  // timer in seconds
+    };
+
+    // Screenshake
+    let shakeTimer = 0;
+    let shakeIntensity = 0;
+    let blinkTimer = 0; // red blink on life loss
+
+    function triggerShake(duration, intensity) {
+      shakeTimer = duration;
+      shakeIntensity = intensity;
+    }
+
+    // Float decoration elements in microscope background
+    class BackgroundDrifter {
+      constructor() {
+        this.reset(true);
+      }
+
+      reset(randomY = false) {
+        this.x = Math.random() * GAME_WIDTH;
+        this.y = randomY ? Math.random() * GAME_HEIGHT : -120;
+        this.size = 20 + Math.random() * 60;
+        this.speed = 10 + Math.random() * 25; // Slower drifting for background feel
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.4;
+        
+        // Distribution of background elements
+        const types = ['rbc', 'platelet', 'virus', 'bacteria', 'fungus'];
+        const weights = [0.4, 0.2, 0.15, 0.15, 0.1];
+        const r = Math.random();
+        let sum = 0;
+        for (let i = 0; i < types.length; i++) {
+          sum += weights[i];
+          if (r <= sum) {
+            this.type = types[i];
+            break;
+          }
+        }
+      }
+
+      update(dt) {
+        this.y += this.speed * dt;
+        this.rotation += this.rotSpeed * dt;
+        if (this.y > GAME_HEIGHT + 120) {
+          this.reset(false);
+        }
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+        c.rotate(this.rotation);
+        
+        c.lineWidth = 1.5;
+
+        if (this.type === 'platelet') {
+          c.fillStyle = 'rgba(0, 242, 254, 0.16)';
+          c.strokeStyle = 'rgba(0, 242, 254, 0.26)';
+          c.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3;
+            const r = this.size * (0.4 + Math.random() * 0.2);
+            c.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+          }
+          c.closePath();
+          c.fill();
+          c.stroke();
+        } else if (this.type === 'rbc') {
+          c.fillStyle = 'rgba(255, 0, 50, 0.14)';
+          c.strokeStyle = 'rgba(255, 0, 50, 0.24)';
+          c.beginPath();
+          c.arc(0, 0, this.size, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+
+          c.beginPath();
+          c.arc(0, 0, this.size * 0.4, 0, Math.PI * 2);
+          c.fillStyle = 'rgba(10, 16, 26, 0.7)';
+          c.fill();
+        } else if (this.type === 'virus') {
+          c.fillStyle = 'rgba(255, 68, 68, 0.14)';
+          c.strokeStyle = 'rgba(255, 68, 68, 0.24)';
+          // Core
+          c.beginPath();
+          c.arc(0, 0, this.size * 0.4, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+          // Spikes
+          for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI) / 4;
+            c.beginPath();
+            c.moveTo(0, 0);
+            c.lineTo(Math.cos(angle) * this.size, Math.sin(angle) * this.size);
+            c.stroke();
+          }
+        } else if (this.type === 'bacteria') {
+          c.fillStyle = 'rgba(57, 255, 20, 0.14)';
+          c.strokeStyle = 'rgba(57, 255, 20, 0.24)';
+          c.beginPath();
+          c.ellipse(0, 0, this.size * 0.7, this.size * 0.35, 0, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+        } else if (this.type === 'fungus') {
+          c.strokeStyle = 'rgba(255, 179, 0, 0.24)';
+          c.beginPath();
+          c.moveTo(0, this.size * 0.5);
+          c.lineTo(0, -this.size * 0.5);
+          // branches
+          c.moveTo(0, -this.size * 0.2);
+          c.lineTo(this.size * 0.3, -this.size * 0.4);
+          c.moveTo(0, 0);
+          c.lineTo(-this.size * 0.3, -this.size * 0.2);
+          c.stroke();
+          // spores
+          c.fillStyle = 'rgba(255, 179, 0, 0.14)';
+          c.beginPath();
+          c.arc(0, -this.size * 0.5, 3, 0, Math.PI * 2);
+          c.arc(this.size * 0.3, -this.size * 0.4, 3, 0, Math.PI * 2);
+          c.arc(-this.size * 0.3, -this.size * 0.2, 3, 0, Math.PI * 2);
+          c.fill();
+        }
+        c.restore();
+      }
+    }
+
+    // Initialize bg
+    for (let i = 0; i < 20; i++) {
+      backgroundDecors.push(new BackgroundDrifter());
+    }
+
+    // --- PARTICLE EMITTER ---
+    class Particle {
+      constructor(x, y, color, speed, angle, size, decay, gravity = 0) {
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.color = color;
+        this.size = size;
+        this.decay = decay; // lifespan decay factor
+        this.life = 1.0;
+        this.gravity = gravity;
+      }
+
+      update(dt) {
+        this.vy += this.gravity * dt;
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.vx *= Math.exp(-0.8 * dt);
+        this.vy *= Math.exp(-0.8 * dt);
+        this.life -= this.decay * dt;
+      }
+
+      draw(c) {
+        c.save();
+        c.globalAlpha = this.life;
+        c.fillStyle = this.color;
+        c.shadowBlur = 10;
+        c.shadowColor = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    function spawnExplosion(x, y, color, count = 15) {
+      for (let i = 0; i < count; i++) {
+        const speed = 50 + Math.random() * 180;
+        const angle = Math.random() * Math.PI * 2;
+        const size = 3 + Math.random() * 5;
+        const decay = 1.2 + Math.random() * 1.5;
+        particles.push(new Particle(x, y, color, speed, angle, size, decay));
+      }
+    }
+
+    // --- DESTRUCTIBLE TISSUE BARRIERS ---
+    class Barrier {
+      constructor(startX, startY) {
+        this.startX = startX;
+        this.startY = startY;
+        this.cols = 10;
+        this.rows = 5;
+        this.blockSize = 6;
+        this.padding = 1;
+        this.grid = Array.from({length: this.rows}).map(() => Array(this.cols).fill(null));
+        this.init();
+      }
+
+      init() {
+        Array.from({length: this.rows}).forEach((_, r) => {
+          Array.from({length: this.cols}).forEach((_, c) => {
+            this.grid[r][c] = {
+              x: this.startX + c * (this.blockSize + this.padding),
+              y: this.startY + r * (this.blockSize + this.padding),
+              hp: 3,
+              maxHp: 3
+            };
+          });
+        });
+      }
+
+      draw(c) {
+        this.grid.forEach(row => {
+          row.forEach(b => {
+            if (b.hp <= 0) return;
+            const ratio = b.hp / b.maxHp;
+            c.save();
+            c.fillStyle = `rgba(168, 85, 247, ${0.3 + ratio * 0.7})`;
+            c.strokeStyle = `rgba(192, 132, 252, ${0.4 + ratio * 0.6})`;
+            c.shadowBlur = 4;
+            c.shadowColor = 'rgba(168, 85, 247, 0.5)';
+            c.fillRect(b.x, b.y, this.blockSize, this.blockSize);
+            c.strokeRect(b.x, b.y, this.blockSize, this.blockSize);
+            c.restore();
+          });
+        });
+      }
+
+      checkCollision(box, reverse = false) {
+        const colWidth = this.blockSize + this.padding; // 7
+        const centerX = box.x + box.w / 2;
+        const c = Math.floor((centerX - this.startX) / colWidth);
+
+        // If the center is out of the barrier's bounds, no collision
+        if (c < 0 || c >= this.cols) {
+          return null;
+        }
+
+        let foundBlock = null;
+        if (reverse) {
+          // Check bottom-to-top (for player bullets traveling upwards)
+          const reversedRows = [...this.grid].reverse();
+          reversedRows.some(row => {
+            const b = row[c];
+            if (b && b.hp > 0) {
+              // Enforce boundary check to prevent bullet tunneling
+              // The bullet's top edge (box.y) is at/above the block's bottom edge (b.y + this.blockSize)
+              // and its bottom edge is not completely above the top of the barrier.
+              if (box.y <= b.y + this.blockSize && box.y + box.h >= this.startY) {
+                foundBlock = b;
+                return true; // stop search at the bottom-most active block
+              }
+            }
+            return false;
+          });
+        } else {
+          // Check top-to-bottom (for enemy bullets traveling downwards)
+          this.grid.some(row => {
+            const b = row[c];
+            if (b && b.hp > 0) {
+              // Enforce boundary check to prevent bullet tunneling
+              // The bullet's bottom edge (box.y + box.h) is at/below the block's top edge (b.y)
+              // and its top edge is not completely below the bottom of the barrier.
+              const barrierBottom = this.startY + this.rows * colWidth;
+              if (box.y + box.h >= b.y && box.y <= barrierBottom) {
+                foundBlock = b;
+                return true; // stop search at the top-most active block
+              }
+            }
+            return false;
+          });
+        }
+        return foundBlock;
+      }
+    }
+
+    // Initialize Barriers
+    function initBarriers() {
+      barriers = [];
+      const spacing = GAME_WIDTH / 5;
+      for (let i = 0; i < 4; i++) {
+        barriers.push(new Barrier((i + 1) * spacing - 35, 750));
+      }
+    }
+
+    // --- PLAYER CLASS ---
+    class Player {
+      constructor(type) {
+        this.type = type;
+        this.x = GAME_WIDTH / 2;
+        this.y = 900;
+        this.radius = 24;
+        this.nucleusAngle = 0;
+        this.vx = 0; // horizontal velocity
+        
+        // Stats according to lineage
+        if (type === 'macrophage') {
+          this.speed = 360;
+          this.fireRate = 0.28;
+          maxLives = 5;
+          this.color = '#00f2fe';
+        } else if (type === 'neutrophil') {
+          this.speed = 470;
+          this.fireRate = 0.16;
+          maxLives = 3;
+          this.color = '#ffd700';
+        } else { // nkcell
+          this.speed = 320;
+          this.fireRate = 0.28; // faster — fires 3 rings per burst
+          maxLives = 4;
+          this.color = '#ff007f';
+        }
+
+        this.fireCooldown = 0;
+      }
+
+      update(dt) {
+        // Control movements with smooth physics
+        let targetAccel = 0;
+        if (keys['ArrowLeft'] || keys['KeyA']) targetAccel = -1;
+        if (keys['ArrowRight'] || keys['KeyD']) targetAccel = 1;
+
+        const friction = 18.0;  // Snappy friction
+        const accelRate = this.speed * friction * 1.5; // Responsive acceleration
+
+        if (targetAccel !== 0) {
+          this.vx += targetAccel * accelRate * dt;
+        } else {
+          this.vx *= Math.exp(-friction * dt);
+        }
+
+        // Clamp velocity to max speed
+        if (Math.abs(this.vx) > this.speed) {
+          this.vx = Math.sign(this.vx) * this.speed;
+        }
+
+        this.x += this.vx * dt;
+
+        if (this.x - this.radius < 0) {
+          this.x = this.radius;
+          this.vx = 0;
+        }
+        if (this.x + this.radius > GAME_WIDTH) {
+          this.x = GAME_WIDTH - this.radius;
+          this.vx = 0;
+        }
+
+        // Weapon cooldowns
+        if (this.fireCooldown > 0) {
+          this.fireCooldown -= dt;
+        }
+
+        // Space to Fire
+        if (keys['Space'] && this.fireCooldown <= 0) {
+          this.shoot();
+        }
+
+        this.nucleusAngle += dt * 2.5;
+      }
+
+      shoot() {
+        sound.shoot();
+        const baseCooldown = this.fireRate;
+        const cooldownMultiplier = activePowerups.rapidFire > 0 ? 0.55 : 1.0;
+        this.fireCooldown = baseCooldown * cooldownMultiplier;
+
+        const bulletType = this.type;
+        const isTriple = activePowerups.tripleShot > 0;
+
+        if (isTriple) {
+          // Left, center, right
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, -0.2, bulletType));
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, 0, bulletType));
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, 0.2, bulletType));
+        } else if (bulletType === 'nkcell') {
+          // NK cell always fires 3 perforin rings in a spread
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, -0.18, bulletType));
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, 0, bulletType));
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, 0.18, bulletType));
+        } else {
+          playerBullets.push(new PlayerBullet(this.x, this.y - 10, 0, bulletType));
+        }
+      }
+
+      useComplement() {
+        if (complementCharges > 0) {
+          complementCharges--;
+          updateInventoryUI();
+          sound.complement();
+          triggerShake(0.6, 15);
+          spawnExplosion(this.x, this.y, '#ffd700', 40);
+          complementWave = new ComplementWave(this.x, this.y);
+        }
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        // Outer membrane
+        c.strokeStyle = this.color;
+        c.lineWidth = 3;
+        c.fillStyle = 'rgba(10, 16, 26, 0.8)';
+        c.shadowBlur = 15;
+        c.shadowColor = this.color;
+
+        // Cellular pseudopods / waving border
+        c.beginPath();
+        for (let i = 0; i < 360; i += 10) {
+          const rad = (i * Math.PI) / 180;
+          const wobble = Math.sin(rad * 8 + this.nucleusAngle) * 3;
+          const r = this.radius + wobble;
+          c.lineTo(Math.cos(rad) * r, Math.sin(rad) * r);
+        }
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        // Nucleus design
+        c.fillStyle = this.color;
+        c.globalAlpha = 0.55;
+        c.shadowBlur = 8;
+
+        if (this.type === 'macrophage') {
+          // Shifting single nucleus kidney-shaped
+          c.beginPath();
+          c.arc(-4, 0, 10, 0, Math.PI * 2);
+          c.arc(4, 0, 8, 0, Math.PI * 2);
+          c.fill();
+        } else if (this.type === 'neutrophil') {
+          // Multi-lobed nucleus
+          c.beginPath();
+          c.arc(-8, -4, 6, 0, Math.PI * 2);
+          c.arc(6, -6, 5, 0, Math.PI * 2);
+          c.arc(2, 8, 6, 0, Math.PI * 2);
+          c.fill();
+          // thin connections
+          c.strokeStyle = this.color;
+          c.lineWidth = 2;
+          c.beginPath();
+          c.moveTo(-8, -4);
+          c.lineTo(6, -6);
+          c.lineTo(2, 8);
+          c.closePath();
+          c.stroke();
+        } else {
+          // NK cell perforin granules around a simple nucleus
+          c.beginPath();
+          c.arc(0, 0, 11, 0, Math.PI * 2);
+          c.fill();
+          // small dots around
+          c.globalAlpha = 0.8;
+          for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+            const gx = Math.cos(a + this.nucleusAngle * 0.5) * 16;
+            const gy = Math.sin(a + this.nucleusAngle * 0.5) * 16;
+            c.beginPath();
+            c.arc(gx, gy, 2.5, 0, Math.PI * 2);
+            c.fill();
+          }
+        }
+        c.restore();
+      }
+    }
+
+    // --- COMPLEMENT BOMB WAVE ---
+    let complementWave = null;
+    class ComplementWave {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 10;
+        this.maxRadius = 750;
+        this.speed = 900; // px/s
+
+        // Reset damaged flags on all active pathogens and boss for this new wave
+        pathogens.forEach(p => p.damagedByWave = false);
+        if (boss) boss.damagedByWave = false;
+      }
+
+      update(dt) {
+        this.radius += this.speed * dt;
+        if (this.radius > this.maxRadius) {
+          complementWave = null;
+          return;
+        }
+
+        // Damage and clean up enemies in path
+        pathogens = pathogens.filter(p => {
+          if (p.spawnDelay > 0) return true;
+          const dist = Math.hypot(p.x - this.x, p.y - this.y);
+          if (dist < this.radius && !p.damagedByWave) {
+            p.hp -= 10;
+            p.damagedByWave = true;
+            triggerShake(0.15, 6);
+            if (p.hp <= 0) {
+              sound.lyse();
+              triggerShake(0.2, 8);
+              spawnExplosion(p.x, p.y, p.color, 15);
+              rollPowerup(p.x, p.y);
+              score += 100;
+              stageKills++;
+              globalKills++;
+              totalKills++;
+              complementKillCounter++;
+              if (complementKillCounter >= 30) {
+                complementKillCounter = 0;
+                if (complementCharges < 4) {
+                  complementCharges++;
+                  updateInventoryUI();
+                }
+              }
+              saveStats();
+              return false; // remove from pathogens list
+            }
+          }
+          return true; // keep
+        });
+
+        if (boss && !boss.damagedByWave) {
+          const dist = Math.hypot(boss.x - this.x, boss.y - this.y);
+          if (dist < this.radius) {
+            boss.hp -= 15;
+            boss.damagedByWave = true;
+            triggerShake(0.3, 10);
+          }
+        }
+
+        // Check if all pathogens were cleared by the Complement Wave
+        checkStageProgress();
+
+        // Clear enemy bullets
+        enemyBullets = enemyBullets.filter(eb => {
+          const dist = Math.hypot(eb.x - this.x, eb.y - this.y);
+          return dist > this.radius;
+        });
+      }
+
+      draw(c) {
+        c.save();
+        c.strokeStyle = '#ffd700';
+        c.lineWidth = 12 * (1 - this.radius / this.maxRadius);
+        c.shadowBlur = 30;
+        c.shadowColor = '#ffd700';
+        c.beginPath();
+        c.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        c.stroke();
+        c.restore();
+      }
+    }
+
+    // --- BULLETS ---
+    class PlayerBullet {
+      constructor(x, y, dx, type) {
+        this.x = x;
+        this.y = y;
+        this.dx = dx; // angle deviation
+        this.type = type;
+        this.speed = 700;
+        this.width = 12;
+        this.height = 12;
+        this.pierced = 0;
+        this.pierceLimit = type === 'nkcell' ? 3 : 1;
+        this.hitTargets = new Set();
+        // Fluid drift: each bullet has a unique sinusoidal lateral wobble
+        this.age = 0;
+        this.driftAmp = 18 + Math.random() * 14;  // px amplitude
+        this.driftFreq = 4 + Math.random() * 3;   // cycles/s
+        this.driftPhase = Math.random() * Math.PI * 2;
+      }
+
+      update(dt) {
+        this.age += dt;
+        // Sinusoidal lateral drift simulating fluid medium
+        const drift = this.driftAmp * Math.cos(this.age * this.driftFreq + this.driftPhase) * dt;
+        this.x += this.dx * this.speed * dt + drift;
+        this.y -= this.speed * dt;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        if (this.type === 'macrophage') {
+          // Y-shaped Antibody Bullet
+          c.strokeStyle = '#00f2fe';
+          c.lineWidth = 3;
+          c.shadowBlur = 8;
+          c.shadowColor = '#00f2fe';
+          c.beginPath();
+          c.moveTo(0, 0);
+          c.lineTo(0, -6);
+          c.moveTo(0, -6);
+          c.lineTo(-5, -12);
+          c.moveTo(0, -6);
+          c.lineTo(5, -12);
+          c.stroke();
+        } else if (this.type === 'neutrophil') {
+          // Small yellow granule
+          c.fillStyle = '#ffd700';
+          c.shadowBlur = 10;
+          c.shadowColor = '#ffd700';
+          c.beginPath();
+          c.arc(0, 0, 5, 0, Math.PI * 2);
+          c.fill();
+        } else {
+          // NK perforin ring
+          c.strokeStyle = '#ff007f';
+          c.lineWidth = 3;
+          c.shadowBlur = 12;
+          c.shadowColor = '#ff007f';
+          c.beginPath();
+          c.arc(0, 0, 12, 0, Math.PI * 2);
+          c.stroke();
+        }
+
+        c.restore();
+      }
+    }
+
+    class EnemyBullet {
+      constructor(x, y, vx, vy, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.size = 5;
+        // Fluid drift for enemy bullets
+        this.age = 0;
+        this.driftAmp = 12 + Math.random() * 10;
+        this.driftFreq = 3 + Math.random() * 3;
+        this.driftPhase = Math.random() * Math.PI * 2;
+      }
+
+      update(dt) {
+        this.age += dt;
+        const drift = this.driftAmp * Math.cos(this.age * this.driftFreq + this.driftPhase) * dt;
+        this.x += this.vx * dt + drift;
+        this.y += this.vy * dt;
+      }
+
+      draw(c) {
+        c.save();
+        c.fillStyle = this.color;
+        c.shadowBlur = 8;
+        c.shadowColor = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    // --- STANDARD PATHOGENS ---
+    class Pathogen {
+      constructor(targetX, targetY, type, startX, startY, spawnDelay) {
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.x = startX;
+        this.y = startY;
+        this.startX = startX;
+        this.startY = startY;
+        this.spawnDelay = spawnDelay;
+        this.swoopTime = 0;
+        this.swoopDuration = 2.0;
+        this.state = 'SWOOPING'; // SWOOPING, GRID
+        this.controlX = GAME_WIDTH / 2;
+        this.controlY = GAME_HEIGHT * 0.6;
+
+        this.type = type; // virus, bacterium, spike
+        this.wobble = Math.random() * 100;
+        this.damagedByWave = false;
+
+        if (type === 'virus') {
+          this.hp = 1;
+          this.radius = 18;
+          this.color = '#ff4444';
+        } else if (type === 'bacterium') {
+          this.hp = 2;
+          this.radius = 22;
+          this.color = '#39ff14';
+        } else {
+          this.hp = 3;
+          this.radius = 25;
+          this.color = '#ffb300';
+        }
+      }
+
+      update(dt) {
+        if (this.spawnDelay > 0) {
+          this.spawnDelay -= dt;
+          return;
+        }
+
+        if (this.state === 'SWOOPING') {
+          this.swoopTime += dt;
+          const t = this.swoopTime / this.swoopDuration;
+          if (t >= 1) {
+            this.state = 'GRID';
+            this.x = this.targetX;
+            this.y = this.targetY;
+          } else {
+            const omt = 1 - t;
+            this.x = omt * omt * this.startX + 2 * omt * t * this.controlX + t * t * this.targetX;
+            this.y = omt * omt * this.startY + 2 * omt * t * this.controlY + t * t * this.targetY;
+          }
+        }
+      }
+
+      shoot() {
+        if (this.type === 'bacterium') {
+          enemyBullets.push(new EnemyBullet(this.x, this.y, 0, 260, '#39ff14'));
+        } else if (this.type === 'spike') {
+          // Spread shot of 2
+          enemyBullets.push(new EnemyBullet(this.x, this.y, -45, 230, '#ffb300'));
+          enemyBullets.push(new EnemyBullet(this.x, this.y, 45, 230, '#ffb300'));
+        }
+      }
+
+      draw(c, dt) {
+        if (this.spawnDelay > 0) return;
+        this.wobble += (dt || 0.016) * 12;
+        c.save();
+        c.translate(this.x, this.y);
+
+        if (this.type === 'virus') {
+          // Red capsid with spikes
+          c.fillStyle = this.color;
+          c.shadowBlur = 10;
+          c.shadowColor = this.color;
+          c.beginPath();
+          c.arc(0, 0, this.radius * 0.7, 0, Math.PI * 2);
+          c.fill();
+
+          // Spikes
+          c.strokeStyle = this.color;
+          c.lineWidth = 2.5;
+          for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI) / 4;
+            const spikeLen = this.radius * (0.85 + Math.sin(this.wobble + i) * 0.15);
+            c.beginPath();
+            c.moveTo(0, 0);
+            c.lineTo(Math.cos(angle) * spikeLen, Math.sin(angle) * spikeLen);
+            c.stroke();
+          }
+        } else if (this.type === 'bacterium') {
+          // Green rod with tail
+          c.fillStyle = this.color;
+          c.shadowBlur = 12;
+          c.shadowColor = this.color;
+
+          c.beginPath();
+          c.ellipse(0, 0, this.radius * 0.8, this.radius * 0.4, 0, 0, Math.PI * 2);
+          c.fill();
+
+          // Flagella tail
+          c.strokeStyle = this.color;
+          c.lineWidth = 2;
+          c.beginPath();
+          c.moveTo(-this.radius * 0.8, 0);
+          c.quadraticCurveTo(
+            -this.radius * 1.4, Math.sin(this.wobble) * 8,
+            -this.radius * 2.0, Math.sin(this.wobble * 0.7) * 12
+          );
+          c.stroke();
+        } else {
+          // Spike virus: amber core with node receptors
+          c.fillStyle = this.color;
+          c.shadowBlur = 12;
+          c.shadowColor = this.color;
+          c.beginPath();
+          c.arc(0, 0, this.radius * 0.75, 0, Math.PI * 2);
+          c.fill();
+
+          // receptor nodes
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3 + this.wobble * 0.05;
+            const rx = Math.cos(angle) * this.radius * 0.95;
+            const ry = Math.sin(angle) * this.radius * 0.95;
+            c.beginPath();
+            c.arc(rx, ry, 4.5, 0, Math.PI * 2);
+            c.fill();
+            c.strokeStyle = '#fff';
+            c.lineWidth = 1;
+            c.beginPath();
+            c.moveTo(0, 0);
+            c.lineTo(rx, ry);
+            c.stroke();
+          }
+        }
+        c.restore();
+      }
+    }
+
+    // Grid movement state for standard pathogens
+    let pathogenDir = 1; // 1 = right, -1 = left
+    let pathogenSpeed = 80; // base horizontal speed
+
+    function getDiffConfig() { return DIFF_CONFIGS[difficulty] || DIFF_CONFIGS.normal; }
+
+    function updatePathogens(dt) {
+      if (pathogens.length === 0) return;
+
+      // Update swooping path coordinates
+      pathogens.forEach(p => p.update(dt));
+
+      // If any pathogen is still in spawn delay or swooping state, collective grid does not move
+      const isAnySwooping = pathogens.some(p => p.state === 'SWOOPING');
+      if (isAnySwooping) {
+        // Frontline pathogens that have already spawned can still fire
+        pathogens.forEach(p => {
+          if (p.spawnDelay > 0) return;
+          if (Math.random() < 0.004 * stage * getDiffConfig().fireMult) {
+            const isFrontline = !pathogens.some(p2 => p2 !== p && p2.spawnDelay <= 0 && Math.abs(p2.x - p.x) < 30 && p2.y > p.y);
+            if (isFrontline) {
+              p.shoot();
+            }
+          }
+        });
+        return;
+      }
+
+      // Otherwise, collective grid moves and descends
+      const speedScale = 1.0 + (30 - pathogens.length) * 0.08;
+      const currentSpeed = pathogenSpeed * speedScale * (0.8 + stage * 0.2) * getDiffConfig().speedMult;
+
+      let reachedBound = false;
+      pathogens.forEach(p => {
+        p.x += pathogenDir * currentSpeed * dt;
+        if (p.x - p.radius < 10 || p.x + p.radius > GAME_WIDTH - 10) {
+          reachedBound = true;
+        }
+      });
+
+      if (reachedBound) {
+        pathogenDir *= -1;
+        pathogens.forEach(p => {
+          p.y += 12; // descend gentle 12px
+          p.x += pathogenDir * currentSpeed * dt * 2; // nudge away
+        });
+      }
+
+      // Random firing (only frontline pathogens)
+      pathogens.forEach(p => {
+        if (Math.random() < 0.004 * stage * getDiffConfig().fireMult) {
+          const isFrontline = !pathogens.some(p2 => p2 !== p && Math.abs(p2.x - p.x) < 30 && p2.y > p.y);
+          if (isFrontline) {
+            p.shoot();
+          }
+        }
+      });
+    }
+
+    // Spawns standard wave with Galaga-style swoop parameters
+    function spawnStageWave() {
+      pathogens = [];
+      spawnQueue = [];
+      boss = null;
+      let rows = 4;
+      let cols = 7;
+      let startX = 150;
+      let startY = 120;
+      let spacingX = 90;
+      let spacingY = 70;
+
+      const cfg = getDiffConfig();
+
+      // Setup and enqueue pathogens in grid formation with bezier swoop paths
+      Array.from({length: rows}).forEach((_, r) => {
+        Array.from({length: cols}).forEach((_, c) => {
+          let type = 'virus';
+          if (r === 0) type = 'spike';
+          else if (r === 1) type = 'bacterium';
+
+          const targetX = startX + c * spacingX;
+          const targetY = startY + r * spacingY;
+          // Spawn even columns offscreen left, odd columns offscreen right
+          const startXVal = (c % 2 === 0) ? -50 : GAME_WIDTH + 50;
+          const startYVal = -50;
+          // Staggered entry delay to create streams
+          const spawnDelay = (r * cols + c) * 0.15;
+
+          const p = new Pathogen(targetX, targetY, type, startXVal, startYVal, spawnDelay);
+          p.hp = Math.max(1, Math.round(p.hp * cfg.hpMult));
+          pathogens.push(p);
+        });
+      });
+    }
+
+    // --- MUTAGEN BOSS ---
+    class MutagenBoss {
+      constructor() {
+        this.x = GAME_WIDTH / 2;
+        this.y = -150; // starts above
+        this.radius = 70;
+        this.hp = 60;
+        this.maxHp = 60;
+        this.state = 'ENTRY'; // ENTRY, PATROL, CHARGE_UP, RADIAL_BURST, SWEEP_BEAM, SUMMON, CHARGE_ATTACK
+        this.stateTimer = 0;
+        this.patrolDir = 1;
+        this.wobble = 0;
+        this.damagedByWave = false;
+      }
+
+      update(dt) {
+        this.stateTimer += dt;
+        this.wobble += dt * 8;
+
+        switch (this.state) {
+          case 'ENTRY':
+            this.y += 100 * dt;
+            if (this.y >= 220) {
+              this.y = 220;
+              this.transitionTo('PATROL');
+            }
+            break;
+
+          case 'PATROL':
+            this.x += this.patrolDir * 180 * dt;
+            if (this.x - this.radius < 50) {
+              this.x = 50 + this.radius;
+              this.patrolDir = 1;
+            } else if (this.x + this.radius > GAME_WIDTH - 50) {
+              this.x = GAME_WIDTH - 50 - this.radius;
+              this.patrolDir = -1;
+            }
+
+            // Random shooting
+            if (Math.random() < 0.05) {
+              sound.shoot();
+              enemyBullets.push(new EnemyBullet(this.x, this.y, 0, 320, '#ff007f'));
+              enemyBullets.push(new EnemyBullet(this.x - 30, this.y, -80, 300, '#ff007f'));
+              enemyBullets.push(new EnemyBullet(this.x + 30, this.y, 80, 300, '#ff007f'));
+            }
+
+            if (this.stateTimer > 4.5) {
+              const nextStates = ['CHARGE_UP', 'SUMMON', 'CHARGE_ATTACK', 'SWEEP_BEAM'];
+              this.transitionTo(nextStates[Math.floor(Math.random() * nextStates.length)]);
+            }
+            break;
+
+          case 'CHARGE_UP':
+            // Boss remains still, glowing red/magenta
+            if (this.stateTimer > 1.8) {
+              sound.bossWarn();
+              this.transitionTo('RADIAL_BURST');
+            }
+            break;
+
+          case 'RADIAL_BURST':
+            sound.bossSweep();
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+              enemyBullets.push(new EnemyBullet(
+                this.x, this.y,
+                Math.cos(angle) * 300, Math.sin(angle) * 300,
+                '#ff007f'
+              ));
+            }
+            this.transitionTo('PATROL');
+            break;
+
+          case 'SWEEP_BEAM':
+            // Side-to-side sweeping while streaming bullets downward
+            this.x += this.patrolDir * 300 * dt;
+            if (this.x - this.radius < 30) {
+              this.x = 30 + this.radius;
+              this.patrolDir = 1;
+            } else if (this.x + this.radius > GAME_WIDTH - 30) {
+              this.x = GAME_WIDTH - 30 - this.radius;
+              this.patrolDir = -1;
+            }
+            // Stream bullets rapidly in a spread
+            if (Math.random() < 0.25) {
+              sound.bossSweep();
+              [-90, -45, 0, 45, 90].forEach(deg => {
+                const rad = (deg * Math.PI) / 180;
+                enemyBullets.push(new EnemyBullet(
+                  this.x, this.y + this.radius,
+                  Math.sin(rad) * 200, Math.cos(rad) * 280,
+                  '#ff007f'
+                ));
+              });
+            }
+            if (this.stateTimer > 3.5) this.transitionTo('PATROL');
+            break;
+
+          case 'SUMMON':
+            // Spawn minion viruses
+            if (pathogens.length < 8) {
+              pathogens.push(new Pathogen(this.x - 100, this.y + 40, 'virus'));
+              pathogens.push(new Pathogen(this.x + 100, this.y + 40, 'virus'));
+            }
+            this.transitionTo('PATROL');
+            break;
+
+          case 'CHARGE_ATTACK':
+            // Swoops down on the player location
+            if (this.stateTimer < 1.0) {
+              // Lock target
+              this.targetX = player.x;
+            } else if (this.stateTimer < 2.2) {
+              // Charge
+              this.y += 450 * dt;
+              this.x += (this.targetX - this.x) * 3 * dt;
+              if (this.y > 750) this.y = 750;
+            } else {
+              // Return back
+              this.y -= 250 * dt;
+              if (this.y <= 220) {
+                this.y = 220;
+                this.transitionTo('PATROL');
+              }
+            }
+            break;
+        }
+      }
+
+      transitionTo(newState) {
+        this.state = newState;
+        this.stateTimer = 0;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        // Pulsing boss visual
+        const pulse = 1.0 + Math.sin(this.wobble) * 0.08;
+        const radius = this.radius * pulse;
+
+        // Outer membrane
+        c.fillStyle = 'rgba(10, 16, 26, 0.9)';
+        c.strokeStyle = '#ff007f';
+        c.lineWidth = 6;
+        c.shadowBlur = 25;
+        c.shadowColor = '#ff007f';
+
+        if (this.state === 'CHARGE_UP') {
+          c.shadowColor = '#ffd700';
+          c.strokeStyle = '#ffd700';
+        }
+
+        c.beginPath();
+        for (let i = 0; i < 360; i += 12) {
+          const rad = (i * Math.PI) / 180;
+          const wobbleRadius = radius + Math.sin(rad * 12 + this.wobble) * 6;
+          c.lineTo(Math.cos(rad) * wobbleRadius, Math.sin(rad) * wobbleRadius);
+        }
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        // Glowing nucleus lobes
+        c.fillStyle = '#ff007f';
+        c.globalAlpha = 0.6;
+        if (this.state === 'CHARGE_UP') c.fillStyle = '#ffd700';
+        
+        c.beginPath();
+        c.arc(-18, -10, 18, 0, Math.PI * 2);
+        c.arc(18, -10, 16, 0, Math.PI * 2);
+        c.arc(0, 20, 20, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+
+        // Draw Boss Health Bar at bottom center of boss area
+        const barWidth = 300;
+        const barHeight = 10;
+        const barX = this.x - barWidth / 2;
+        const barY = this.y - this.radius - 20;
+
+        c.fillStyle = 'rgba(0,0,0,0.5)';
+        c.fillRect(barX, barY, barWidth, barHeight);
+
+        const hpPct = Math.max(0, this.hp / this.maxHp);
+        c.fillStyle = '#ff007f';
+        c.fillRect(barX, barY, barWidth * hpPct, barHeight);
+        
+        c.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        c.strokeRect(barX, barY, barWidth, barHeight);
+      }
+    }
+
+    // --- POWER UPS ---
+    class Powerup {
+      constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type; // triple, rapid, life, cytokine
+        this.speed = 120;
+        this.size = 15;
+        this.wobble = Math.random() * 10;
+      }
+
+      update(dt) {
+        this.y += this.speed * dt;
+        this.wobble += dt * 3;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+
+        let color = '#00f2fe';
+        let char = 'P';
+        if (this.type === 'triple') { color = '#ffd700'; char = 'T'; }
+        else if (this.type === 'rapid') { color = '#00f2fe'; char = 'M'; }
+        else if (this.type === 'life') { color = '#39ff14'; char = '+1'; }
+        else if (this.type === 'cytokine') { color = '#ff007f'; char = 'C'; }
+
+        c.fillStyle = 'rgba(10, 16, 26, 0.9)';
+        c.strokeStyle = color;
+        c.lineWidth = 2;
+        c.shadowBlur = 10;
+        c.shadowColor = color;
+
+        // Hexagon
+        c.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI) / 3 + this.wobble * 0.1;
+          c.lineTo(Math.cos(angle) * this.size, Math.sin(angle) * this.size);
+        }
+        c.closePath();
+        c.fill();
+        c.stroke();
+
+        // Label
+        c.fillStyle = '#ffffff';
+        c.font = 'bold 12px "JetBrains Mono", monospace';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText(char, 0, 0);
+
+        c.restore();
+      }
+    }
+
+    function rollPowerup(x, y, forceDrop = false) {
+      if (forceDrop || Math.random() < 0.05) { // 5% chance or forced
+        const types = ['triple', 'rapid', 'life', 'cytokine'];
+        const rType = types[Math.floor(Math.random() * types.length)];
+        powerups.push(new Powerup(x, y, rType));
+      }
+    }
+
+    // --- TOXIN CARRIER (SPACE INVADERS UFO) ---
+    class ToxinCarrier {
+      constructor() {
+        this.direction = Math.random() > 0.5 ? 1 : -1;
+        this.radius = 20;
+        this.x = this.direction === 1 ? -50 : GAME_WIDTH + 50;
+        this.y = 110; // flies horizontally above grid
+        this.speed = 220; // fast moving viroid
+        this.color = '#ffffff';
+        this.wobble = 0;
+      }
+
+      update(dt) {
+        this.x += this.direction * this.speed * dt;
+        this.wobble += dt * 10;
+      }
+
+      draw(c) {
+        c.save();
+        c.translate(this.x, this.y);
+        c.fillStyle = 'rgba(10, 16, 26, 0.9)';
+        c.strokeStyle = '#00f2fe';
+        c.lineWidth = 2.5;
+        c.shadowBlur = 15;
+        c.shadowColor = '#00f2fe';
+
+        // Oval shape
+        c.beginPath();
+        c.ellipse(0, 0, this.radius * 1.5, this.radius * 0.8, 0, 0, Math.PI * 2);
+        c.fill();
+        c.stroke();
+
+        // Pulsing core details
+        c.fillStyle = '#ff007f';
+        c.shadowColor = '#ff007f';
+        const pulse = 2.5 + Math.sin(this.wobble) * 0.8;
+        c.beginPath();
+        c.arc(-12, 0, pulse, 0, Math.PI * 2);
+        c.arc(0, 0, pulse * 1.1, 0, Math.PI * 2);
+        c.arc(12, 0, pulse, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+      }
+    }
+
+    // --- GAME LOOPS & RENDERING ---
+    let lastTime = 0;
+
+    function gameLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      let dt = (timestamp - lastTime) / 1000;
+      if (dt > 0.1) dt = 0.1; // clamp lag
+      lastTime = timestamp;
+
+      if (!paused) {
+        update(dt);
+      }
+      draw();
+
+      if (state === 'PLAYING') {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    function startStageTransition() {
+      inTransition = true;
+      transitionTimer = 2.0;
+      playerBullets = [];
+      enemyBullets = [];
+      powerups = [];
+      sound.levelUp();
+    }
+
+    function update(dt) {
+      // Background drifting
+      backgroundDecors.forEach(b => b.update(dt));
+
+      // Screen shake and blink decay
+      if (shakeTimer > 0) shakeTimer -= dt;
+      if (blinkTimer > 0) blinkTimer -= dt;
+
+      // Level transition phase
+      if (inTransition) {
+        transitionTimer -= dt;
+        if (transitionTimer <= 0) {
+          inTransition = false;
+          stage++;
+          if (stage % 5 === 0) {
+            sound.bossWarn();
+            boss = new MutagenBoss();
+          } else {
+            spawnStageWave();
+          }
+        }
+        particles.forEach(p => p.update(dt));
+        return;
+      }
+
+      // Row-by-row spawning animation phase
+      if (spawnQueue.length > 0) {
+        spawnRowTimer -= dt;
+        if (spawnRowTimer <= 0) {
+          const nextRow = spawnQueue.shift();
+          pathogens.push(...nextRow);
+          spawnRowTimer = SPAWN_ROW_DELAY;
+          sound.hit();
+        }
+        // Let particles/player update, but restrict player shooting (cooldown) during intro
+        particles.forEach(p => p.update(dt));
+        if (player) {
+          player.update(dt);
+          player.fireCooldown = 0.1;
+        }
+        return;
+      }
+
+      // Update entities
+      if (player) {
+        player.update(dt);
+      }
+
+      if (complementWave) {
+        complementWave.update(dt);
+      }
+
+      updatePathogens(dt);
+
+      // Toxin Carrier (UFO) spawning and updates
+      if (!toxinCarrier && !boss && !inTransition && !pathogens.some(p => p.state === 'SWOOPING')) {
+        toxinSpawnTimer -= dt;
+        if (toxinSpawnTimer <= 0) {
+          toxinCarrier = new ToxinCarrier();
+          toxinSpawnTimer = 15 + Math.random() * 20; // 15-35 seconds
+        }
+      }
+
+      if (toxinCarrier) {
+        toxinCarrier.update(dt);
+        if (toxinCarrier.x < -100 || toxinCarrier.x > GAME_WIDTH + 100) {
+          toxinCarrier = null;
+        }
+      }
+
+      // Breach Game Over check (Space Invaders rule)
+      pathogens.forEach(p => {
+        if (player && p.y + p.radius >= player.y - player.radius) {
+          sound.gameOver();
+          endGame();
+        }
+      });
+
+      if (boss) {
+        boss.update(dt);
+        // Boss Lysis check
+        if (boss.hp <= 0) {
+          sound.lyse();
+          triggerShake(0.8, 20);
+          spawnExplosion(boss.x, boss.y, '#ff007f', 40);
+          score += 1500;
+          boss = null;
+          stageKills++;
+          globalKills++;
+          totalKills++;
+          saveStats();
+          startStageTransition();
+        }
+      }
+
+      // Update Powerups active timers
+      if (activePowerups.tripleShot > 0) activePowerups.tripleShot -= dt;
+      if (activePowerups.rapidFire > 0) activePowerups.rapidFire -= dt;
+
+      // Update Bullets
+      playerBullets.forEach(pb => pb.update(dt));
+      enemyBullets.forEach(eb => eb.update(dt));
+      powerups.forEach(pu => pu.update(dt));
+      particles.forEach(p => p.update(dt));
+
+      // Filter off-screens
+      playerBullets = playerBullets.filter(pb => pb.y > 0 && pb.x > 0 && pb.x < GAME_WIDTH);
+      enemyBullets = enemyBullets.filter(eb => eb.y < GAME_HEIGHT && eb.x > 0 && eb.x < GAME_WIDTH);
+      powerups = powerups.filter(pu => pu.y < GAME_HEIGHT);
+      particles = particles.filter(p => p.life > 0);
+
+      // --- COLLISION LOGICS ---
+      // 1. Player bullets vs Barriers and Pathogens (with robust splice-free logic)
+      playerBullets.forEach((pb) => {
+        if (pb.destroyed) return;
+
+        // Barriers check
+        barriers.forEach(bar => {
+          if (pb.destroyed) return;
+          // Dynamically size bounding box based on bullet type (e.g. larger perforin rings)
+          const bulletSize = pb.type === 'nkcell' ? 12 : 6;
+          const block = bar.checkCollision({x: pb.x - bulletSize, y: pb.y - bulletSize, w: bulletSize * 2, h: bulletSize * 2}, true);
+          if (block) {
+            block.hp--;
+            spawnExplosion(pb.x, pb.y, 'rgba(168, 85, 247, 0.8)', 4);
+            pb.destroyed = true;
+          }
+        });
+
+        if (pb.destroyed) return;
+
+        // Pathogens check
+        pathogens.forEach((path, pathIdx) => {
+          if (pb.destroyed) return;
+          if (path.spawnDelay > 0) return;
+          if (pb.hitTargets.has(path)) return;
+          const dist = Math.hypot(path.x - pb.x, path.y - pb.y);
+          if (dist < path.radius + 6) {
+            pb.hitTargets.add(path);
+            path.hp--;
+            sound.hit();
+            spawnExplosion(pb.x, pb.y, path.color, 6);
+            pb.pierced++;
+            if (pb.pierced >= pb.pierceLimit) {
+              pb.destroyed = true;
+            }
+
+            if (path.hp <= 0) {
+              sound.lyse();
+              triggerShake(0.2, 8);
+              spawnExplosion(path.x, path.y, path.color, 15);
+              rollPowerup(path.x, path.y);
+              pathogens.splice(pathIdx, 1);
+
+              score += 100;
+              stageKills++;
+              globalKills++;
+              totalKills++;
+              complementKillCounter++;
+
+              if (complementKillCounter >= 30) {
+                complementKillCounter = 0;
+                if (complementCharges < 4) { complementCharges++; updateInventoryUI(); }
+              }
+              saveStats();
+
+              // Check stage complete
+              checkStageProgress();
+            }
+          }
+        });
+
+        if (pb.destroyed) return;
+
+        // Boss check
+        if (boss) {
+          const dist = Math.hypot(boss.x - pb.x, boss.y - pb.y);
+          if (dist < boss.radius + 8) {
+            boss.hp--;
+            sound.hit();
+            spawnExplosion(pb.x, pb.y, '#ff007f', 6);
+            pb.destroyed = true;
+          }
+        }
+
+        if (pb.destroyed) return;
+
+        // Toxin Carrier check
+        if (toxinCarrier) {
+          const dist = Math.hypot(toxinCarrier.x - pb.x, toxinCarrier.y - pb.y);
+          if (dist < toxinCarrier.radius + 8) {
+            sound.lyse();
+            triggerShake(0.4, 12);
+            spawnExplosion(toxinCarrier.x, toxinCarrier.y, '#ffd700', 20);
+            score += 500;
+            rollPowerup(toxinCarrier.x, toxinCarrier.y, true); // force drop power-up
+            toxinCarrier = null;
+            pb.destroyed = true;
+          }
+        }
+      });
+
+      // Filter destroyed player bullets
+      playerBullets = playerBullets.filter(pb => !pb.destroyed);
+
+      // 2. Enemy bullets and body contact vs Barriers and Player
+      enemyBullets.forEach((eb) => {
+        if (eb.destroyed) return;
+
+        // Barriers check
+        barriers.forEach(bar => {
+          if (eb.destroyed) return;
+          const block = bar.checkCollision({x: eb.x - eb.size, y: eb.y - eb.size, w: eb.size * 2, h: eb.size * 2});
+          if (block) {
+            block.hp--;
+            spawnExplosion(eb.x, eb.y, 'rgba(168, 85, 247, 0.8)', 4);
+            eb.destroyed = true;
+          }
+        });
+
+        if (eb.destroyed) return;
+
+        // Player check
+        if (player) {
+          const dist = Math.hypot(player.x - eb.x, player.y - eb.y);
+          if (dist < player.radius + eb.size) {
+            eb.destroyed = true;
+            damagePlayer();
+          }
+        }
+      });
+
+      // Filter destroyed enemy bullets
+      enemyBullets = enemyBullets.filter(eb => !eb.destroyed);
+
+      // Enemy body contact check
+      pathogens.forEach(p => {
+        if (player) {
+          const dist = Math.hypot(player.x - p.x, player.y - p.y);
+          if (dist < player.radius + p.radius) {
+            damagePlayer();
+          }
+        }
+      });
+
+      if (boss && player) {
+        const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
+        if (dist < player.radius + boss.radius) {
+          damagePlayer();
+        }
+      }
+
+      // 3. Player contact with Power-ups
+      powerups.forEach((pu, puIdx) => {
+        if (player) {
+          const dist = Math.hypot(player.x - pu.x, player.y - pu.y);
+          if (dist < player.radius + pu.size) {
+            sound.powerup();
+            const color = pu.type === 'triple' ? '#ffd700' : (pu.type === 'rapid' ? '#00f2fe' : (pu.type === 'life' ? '#39ff14' : '#ff007f'));
+            spawnExplosion(pu.x, pu.y, color, 12);
+            if (pu.type === 'life') {
+              // Extra life: auto-apply immediately on contact
+              if (lives < maxLives) lives++;
+            } else {
+              inventory[pu.type]++;
+              updateInventoryUI();
+            }
+            powerups.splice(puIdx, 1);
+          }
+        }
+      });
+    }
+
+    function checkStageProgress() {
+      if (pathogens.length === 0 && !boss && !inTransition) {
+        startStageTransition();
+      }
+    }
+
+    function damagePlayer() {
+      if (window.immunityInvincible) return;
+      lives--;
+      sound.playerHit();
+      triggerShake(0.5, 18);
+      blinkTimer = 0.55; // trigger soft red blink
+      spawnExplosion(player.x, player.y, '#ff4444', 25);
+      if (lives <= 0) {
+        sound.gameOver();
+        endGame();
+      }
+    }
+
+    function updateInventoryUI() {
+      const t = document.getElementById('inv-triple');
+      const r = document.getElementById('inv-rapid');
+      const c = document.getElementById('inv-cytokine');
+      const comp = document.getElementById('inv-complement');
+      if (t) t.textContent = inventory.triple;
+      if (r) r.textContent = inventory.rapid;
+      if (c) c.textContent = inventory.cytokine;
+      if (comp) comp.textContent = complementCharges;
+    }
+
+    function applyPowerup(type) {
+      if (type === 'triple') {
+        activePowerups.tripleShot = 12; // 12 seconds
+      } else if (type === 'rapid') {
+        activePowerups.rapidFire = 12;
+      } else if (type === 'cytokine') {
+        triggerShake(0.6, 25);
+        sound.lyse();
+        pathogens.forEach(p => {
+          if (p.spawnDelay > 0) return;
+          p.hp -= 2;
+          spawnExplosion(p.x, p.y, p.color, 8);
+        });
+        pathogens = pathogens.filter(p => {
+          if (p.spawnDelay > 0) return true;
+          if (p.hp <= 0) {
+            score += 100;
+            stageKills++;
+            globalKills++;
+            totalKills++;
+            return false;
+          }
+          return true;
+        });
+        if (boss) {
+          boss.hp -= 8;
+          spawnExplosion(boss.x, boss.y, '#ff007f', 12);
+        }
+        saveStats();
+        // Correctly check if all pathogens were wiped by Cytokine Storm
+        checkStageProgress();
+      }
+      updateInventoryUI();
+    }
+
+    function draw() {
+      // Apply screen shake offsets
+      ctx.save();
+      if (shakeTimer > 0) {
+        const dx = (Math.random() - 0.5) * shakeIntensity;
+        const dy = (Math.random() - 0.5) * shakeIntensity;
+        ctx.translate(dx, dy);
+      }
+
+      // Background reset
+      ctx.fillStyle = '#020406';
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+      // Draw microscope dotted grid FIRST (behind blurred drifters)
+      ctx.save();
+      // Primary grid — faint cyan dotted
+      ctx.strokeStyle = 'rgba(0, 242, 254, 0.22)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 15]);
+      for (let gx = 100; gx < GAME_WIDTH; gx += 100) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, GAME_HEIGHT); ctx.stroke();
+      }
+      for (let gy = 100; gy < GAME_HEIGHT; gy += 100) {
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(GAME_WIDTH, gy); ctx.stroke();
+      }
+      // Secondary finer grid
+      ctx.strokeStyle = 'rgba(0, 242, 254, 0.08)';
+      ctx.setLineDash([2, 24]);
+      for (let gx = 50; gx < GAME_WIDTH; gx += 50) {
+        if (gx % 100 === 0) continue;
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, GAME_HEIGHT); ctx.stroke();
+      }
+      for (let gy = 50; gy < GAME_HEIGHT; gy += 50) {
+        if (gy % 100 === 0) continue;
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(GAME_WIDTH, gy); ctx.stroke();
+      }
+      ctx.restore();
+
+      // Draw out-of-focus background drifters with blur (depth-of-field microscope effect)
+      ctx.save();
+      ctx.filter = 'blur(4px)';
+      backgroundDecors.forEach(b => b.draw(ctx));
+      ctx.filter = 'none';
+      ctx.restore();
+
+      // Soft red blink overlay when player loses a life
+      if (blinkTimer > 0) {
+        // Smooth bell-curve fade: peak at midpoint, zero at edges
+        const ratio = blinkTimer / 0.55; // 0..1
+        const blinkAlpha = Math.sin(ratio * Math.PI) * 0.2;
+        ctx.save();
+        ctx.fillStyle = `rgba(220, 30, 30, ${Math.max(0, blinkAlpha)})`;
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.restore();
+      }
+
+      // Draw barriers
+      barriers.forEach(b => b.draw(ctx));
+
+      // Draw complement wave
+      if (complementWave) {
+        complementWave.draw(ctx);
+      }
+
+      // Draw bullets and items
+      playerBullets.forEach(pb => pb.draw(ctx));
+      enemyBullets.forEach(eb => eb.draw(ctx));
+      powerups.forEach(pu => pu.draw(ctx));
+      particles.forEach(p => p.draw(ctx, 0.016));
+
+      // Draw standard pathogens
+      pathogens.forEach(p => p.draw(ctx));
+
+      // Draw Toxin Carrier
+      if (toxinCarrier) {
+        toxinCarrier.draw(ctx);
+      }
+
+      // Draw Boss
+      if (boss) {
+        boss.draw(ctx);
+      }
+
+      // Draw Player
+      if (player) {
+        player.draw(ctx);
+      }
+
+      // Draw level transition overlay
+      if (inTransition) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(2, 4, 6, 0.7)';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#00f2fe';
+        ctx.font = 'bold 50px "Outfit", sans-serif';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#00f2fe';
+        ctx.fillText('STAGE CLEARED', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 40);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '20px "JetBrains Mono", monospace';
+        ctx.shadowBlur = 0;
+        ctx.fillText(`PREPARING NEXT BIOME FOR STAGE ${stage + 1}...`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20);
+        ctx.restore();
+      }
+
+      // Draw paused overlay
+      if (paused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(2, 4, 6, 0.7)';
+        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ff007f';
+        ctx.font = 'bold 50px "Outfit", sans-serif';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff007f';
+        ctx.fillText('BIOME DEFENSE PAUSED', GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '20px "JetBrains Mono", monospace';
+        ctx.shadowBlur = 0;
+        ctx.fillText('PRESS P TO RESUME IMMUNE RESPONSE', GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30);
+        ctx.restore();
+      }
+
+      ctx.restore(); // cancel shake translation
+
+      // Draw HUD
+      drawHUD();
+    }
+
+    function drawHUD() {
+      ctx.save();
+
+      // Top bar shadow/bg
+      ctx.fillStyle = 'rgba(5, 8, 12, 0.85)';
+      ctx.fillRect(0, 0, GAME_WIDTH, 80);
+      ctx.strokeStyle = 'rgba(0, 242, 254, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, 80);
+      ctx.lineTo(GAME_WIDTH, 80);
+      ctx.stroke();
+
+      // Logo
+      ctx.fillStyle = '#00f2fe';
+      ctx.font = 'bold 22px "Outfit", sans-serif';
+      ctx.fillText('IMMUNITY PROTOCOL', 30, 36);
+      // Difficulty badge
+      const diffColors = { easy: '#39ff14', normal: '#00f2fe', hard: '#ff007f' };
+      ctx.fillStyle = diffColors[difficulty] || '#00f2fe';
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.fillText(`[${difficulty.toUpperCase()}]`, 210, 36);
+
+      ctx.fillStyle = 'rgba(0, 242, 254, 0.5)';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillText(`LINEAGE: ${selectedLineage.toUpperCase()}`, 30, 52);
+
+      // Score and Stage Info
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '20px "Outfit", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`SCORE: ${score}`, GAME_WIDTH - 30, 34);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px "JetBrains Mono", monospace';
+      ctx.fillText(`HIGH SCORE: ${Math.max(highScore, score)}  |  STAGE: ${stage}  |  KILLS: ${globalKills}`, GAME_WIDTH - 30, 52);
+
+      // Health bar / mini-cells drawing
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px "Outfit", sans-serif';
+      ctx.fillText('CELL LIVES:', 300, 35);
+      
+      const lifeColor = player ? player.color : '#00f2fe';
+      for (let i = 0; i < maxLives; i++) {
+        ctx.save();
+        ctx.translate(380 + i * 22, 31);
+        ctx.strokeStyle = lifeColor;
+        ctx.lineWidth = 1.5;
+        ctx.fillStyle = i < lives ? lifeColor : 'transparent';
+        
+        ctx.beginPath();
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+          const wobble = Math.sin(a * 4) * 1.5;
+          const r = 6 + wobble;
+          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Complement Wave progress bar
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px "Outfit", sans-serif';
+      ctx.fillText('COMPLEMENT CHARGES:', 300, 55);
+
+      for (let i = 0; i < 4; i++) {
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = i < complementCharges ? '#ffd700' : 'transparent';
+        ctx.fillRect(440 + i * 20, 47, 12, 8);
+        ctx.strokeRect(440 + i * 20, 47, 12, 8);
+      }
+
+      // active powerup indicators at the bottom
+      let powerupActive = false;
+      let activeText = '';
+      if (activePowerups.tripleShot > 0) {
+        activeText += `TRIPLE SHOT: ${activePowerups.tripleShot.toFixed(1)}s   `;
+        powerupActive = true;
+      }
+      if (activePowerups.rapidFire > 0) {
+        activeText += `RAPID FIRE: ${activePowerups.rapidFire.toFixed(1)}s   `;
+        powerupActive = true;
+      }
+
+      if (powerupActive) {
+        ctx.fillStyle = 'rgba(5, 8, 12, 0.8)';
+        ctx.fillRect(0, GAME_HEIGHT - 45, GAME_WIDTH, 45);
+        ctx.strokeStyle = 'rgba(0, 242, 254, 0.15)';
+        ctx.beginPath();
+        ctx.moveTo(0, GAME_HEIGHT - 45);
+        ctx.lineTo(GAME_WIDTH, GAME_HEIGHT - 45);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 13px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(activeText, GAME_WIDTH / 2, GAME_HEIGHT - 20);
+      }
+
+      ctx.restore();
+    }
+
+    // --- GAME CONTROL ---
+    function startGame() {
+      sound.init();
+      state = 'PLAYING';
+      document.getElementById('menu-screen').classList.add('hidden');
+      document.getElementById('gameover-screen').classList.add('hidden');
+
+      // Setup Player
+      player = new Player(selectedLineage);
+      lives = selectedLineage === 'neutrophil' ? 2 : 3;
+      score = 0;
+      stage = 1;
+      stageKills = 0;
+      globalKills = 0;
+      complementCharges = 1;
+      complementKillCounter = 0;
+      
+      activePowerups.tripleShot = 0;
+      activePowerups.rapidFire = 0;
+
+      inTransition = false;
+      spawnQueue = [];
+      paused = false;
+      toxinCarrier = null;
+      toxinSpawnTimer = 15 + Math.random() * 15;
+      inventory = { triple: 0, rapid: 0, life: 0, cytokine: 0 };
+      updateInventoryUI();
+
+      playerBullets = [];
+      enemyBullets = [];
+      powerups = [];
+      particles = [];
+      
+      initBarriers();
+      spawnStageWave();
+
+      lastTime = 0;
+      requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+      state = 'GAMEOVER';
+      document.getElementById('gameover-screen').classList.remove('hidden');
+      document.getElementById('summary-kills').textContent = globalKills;
+      document.getElementById('summary-score').textContent = score;
+      document.getElementById('summary-stage').textContent = stage;
+
+      if (score > highScore) {
+        highScore = score;
+        saveStats();
+      }
+
+      // Update leaderboard
+      addLeaderboardEntry(score, stage, selectedLineage);
+      renderLeaderboard(score);
+
+      refreshSelectionCards();
+    }
+
+    // --- SELECTION UI & PREVIEW RENDERING ---
+    const cards = document.querySelectorAll('.lineage-card');
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        if (card.classList.contains('locked')) return;
+        cards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        selectedLineage = card.dataset.cell;
+      });
+    });
+
+    function refreshSelectionCards() {
+      const cNeutrophil = document.getElementById('card-neutrophil');
+      const cNkcell = document.getElementById('card-nkcell');
+
+      if (totalKills >= 100) {
+        cNeutrophil.classList.remove('locked');
+        const req = cNeutrophil.querySelector('.unlock-req');
+        if (req) req.textContent = 'UNLOCKED';
+      }
+      if (totalKills >= 300) {
+        cNkcell.classList.remove('locked');
+        const req = cNkcell.querySelector('.unlock-req');
+        if (req) req.textContent = 'UNLOCKED';
+      }
+    }
+
+    // Render Preview Lineages on Menu Cards
+    function renderPreviewCards() {
+      const lineages = ['macrophage', 'neutrophil', 'nkcell'];
+      lineages.forEach(type => {
+        const prevCanvas = document.getElementById(`preview-${type}`);
+        if (!prevCanvas) return;
+        const pCtx = prevCanvas.getContext('2d');
+        pCtx.fillStyle = '#0f172a';
+        pCtx.fillRect(0, 0, 60, 60);
+
+        let color = '#00f2fe';
+        if (type === 'neutrophil') color = '#ffd700';
+        else if (type === 'nkcell') color = '#ff007f';
+
+        pCtx.save();
+        pCtx.translate(30, 30);
+        pCtx.strokeStyle = color;
+        pCtx.lineWidth = 2;
+        pCtx.fillStyle = 'rgba(10, 16, 26, 0.8)';
+        pCtx.shadowBlur = 8;
+        pCtx.shadowColor = color;
+
+        pCtx.beginPath();
+        for (let i = 0; i < 360; i += 20) {
+          const rad = (i * Math.PI) / 180;
+          const r = 18 + Math.sin(rad * 6) * 1.5;
+          pCtx.lineTo(Math.cos(rad) * r, Math.sin(rad) * r);
+        }
+        pCtx.closePath();
+        pCtx.fill();
+        pCtx.stroke();
+
+        pCtx.fillStyle = color;
+        pCtx.globalAlpha = 0.6;
+        if (type === 'macrophage') {
+          pCtx.beginPath();
+          pCtx.arc(-3, 0, 6, 0, Math.PI * 2);
+          pCtx.arc(3, 0, 4, 0, Math.PI * 2);
+          pCtx.fill();
+        } else if (type === 'neutrophil') {
+          pCtx.beginPath();
+          pCtx.arc(-5, -2, 4, 0, Math.PI * 2);
+          pCtx.arc(4, -3, 3, 0, Math.PI * 2);
+          pCtx.arc(1, 5, 4, 0, Math.PI * 2);
+          pCtx.fill();
+        } else {
+          pCtx.beginPath();
+          pCtx.arc(0, 0, 7, 0, Math.PI * 2);
+          pCtx.fill();
+        }
+        pCtx.restore();
+      });
+    }
+
+    // Init actions
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('retry-btn').addEventListener('click', () => {
+      document.getElementById('gameover-screen').classList.add('hidden');
+      document.getElementById('menu-screen').classList.remove('hidden');
+    });
+
+    refreshSelectionCards();
+    renderPreviewCards();
+
+    // Draw initial blank background frame
+    draw();
+
+    // Log diagnostic runner instructions to browser console
+    console.log(
+      "%c🔬 Immunity Protocol Diagnostics Ready!\nType %cwindow.immunityTest.runAll()%c in this console to run the automated unit test suite.",
+      "color: #00f2fe; font-weight: bold; font-size: 1.1em;",
+      "color: #ffd700; font-weight: bold; font-size: 1.1em; background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 3px;",
+      "color: #00f2fe; font-weight: bold; font-size: 1.1em;"
+    );
+
+    // --- AUTOMATED DIAGNOSTICS & UNIT TESTING ---
+    window.immunityTest = {
+      assert(name, val) {
+        if (val) {
+          console.log(`%c✔ PASS: ${name}`, 'color: #00ff66; font-weight: bold;');
+          return true;
+        } else {
+          console.error(`❌ FAIL: ${name}`);
+          return false;
+        }
+      },
+      runAll() {
+        console.group('%c--- Immunity Protocol Diagnostics ---', 'color: #00f2fe; font-weight: bold; font-size: 1.1em;');
+        let passed = 0;
+        let total = 0;
+        const test = (name, fn) => {
+          total++;
+          try {
+            if (fn()) passed++;
+          } catch(e) {
+            console.error(`Test '${name}' threw an error:`, e);
+          }
+        };
+
+        // Test 1: Difficulty config structure
+        test("Difficulty Config limits", () => {
+          return this.assert("EASY speed mult is 0.65", DIFF_CONFIGS.easy.speedMult === 0.65) &&
+                 this.assert("HARD hp mult is 1.5", DIFF_CONFIGS.hard.hpMult === 1.5);
+        });
+
+        // Test 2: Keys mapping definition
+        test("Key 1 activates Triple Shot and decrements inventory", () => {
+          const origTriple = inventory.triple;
+          inventory.triple = 1;
+          const origTripleShotTime = activePowerups.tripleShot;
+          activePowerups.tripleShot = 0;
+          
+          const ev = new KeyboardEvent('keydown', { code: 'Digit1' });
+          window.dispatchEvent(ev);
+          
+          const success = inventory.triple === 0 && activePowerups.tripleShot === 12;
+          inventory.triple = origTriple;
+          activePowerups.tripleShot = origTripleShotTime;
+          return this.assert("Key 1 activates Triple Shot", success);
+        });
+
+        test("Key 2 activates Rapid Fire and decrements inventory", () => {
+          const origRapid = inventory.rapid;
+          inventory.rapid = 1;
+          const origRapidFireTime = activePowerups.rapidFire;
+          activePowerups.rapidFire = 0;
+          
+          const ev = new KeyboardEvent('keydown', { code: 'Digit2' });
+          window.dispatchEvent(ev);
+          
+          const success = inventory.rapid === 0 && activePowerups.rapidFire === 12;
+          inventory.rapid = origRapid;
+          activePowerups.rapidFire = origRapidFireTime;
+          return this.assert("Key 2 activates Rapid Fire", success);
+        });
+
+        test("Key 3 activates Cytokine Storm", () => {
+          const origCyt = inventory.cytokine;
+          inventory.cytokine = 1;
+          
+          const origPathogens = pathogens;
+          pathogens = [];
+          
+          const ev = new KeyboardEvent('keydown', { code: 'Digit3' });
+          window.dispatchEvent(ev);
+          
+          const success = inventory.cytokine === 0;
+          inventory.cytokine = origCyt;
+          pathogens = origPathogens;
+          return this.assert("Key 3 activates Cytokine Storm", success);
+        });
+
+        test("Key 4 activates Complement Wave", () => {
+          const origState = state;
+          const origPaused = paused;
+          const origPlayer = player;
+          const origCharges = complementCharges;
+          
+          state = 'PLAYING';
+          paused = false;
+          complementCharges = 1;
+          
+          let complementFired = false;
+          player = {
+            x: 450,
+            y: 900,
+            useComplement() {
+              complementFired = true;
+            }
+          };
+          
+          const ev = new KeyboardEvent('keydown', { code: 'Digit4' });
+          window.dispatchEvent(ev);
+          
+          const success = complementFired;
+          
+          state = origState;
+          paused = origPaused;
+          player = origPlayer;
+          complementCharges = origCharges;
+          
+          return this.assert("Key 4 fires Player.useComplement()", success);
+        });
+
+        // Test 3: Lineage Unlocks
+        test("Lineage Lock/Unlock thresholds", () => {
+          const origTotalKills = totalKills;
+          
+          totalKills = 99;
+          const neutLocked = (totalKills < 100);
+          totalKills = 101;
+          const neutUnlocked = (totalKills >= 100);
+          
+          totalKills = 299;
+          const nkLocked = (totalKills < 300);
+          totalKills = 301;
+          const nkUnlocked = (totalKills >= 300);
+          
+          totalKills = origTotalKills;
+          
+          return this.assert("Neutrophil unlocked >= 100 kills", neutLocked && neutUnlocked) &&
+                 this.assert("NK Cell unlocked >= 300 kills", nkLocked && nkUnlocked);
+        });
+
+        // Test 4: Audio context toggling
+        test("Audio Mute Toggle behavior", () => {
+          const origMute = sound.isMuted;
+          const m1 = sound.toggleMute();
+          const m2 = sound.toggleMute();
+          sound.isMuted = origMute;
+          return this.assert("Mute states cycle correctly", m1 !== origMute && m2 === origMute);
+        });
+
+        // Test 5: Complement charge accumulators
+        test("Complement charge logic", () => {
+          const origCharges = complementCharges;
+          const origCounter = complementKillCounter;
+          
+          complementCharges = 0;
+          complementKillCounter = 0;
+          
+          Array.from({length: 30}).forEach(() => {
+            complementKillCounter++;
+            if (complementKillCounter >= 30) {
+              complementKillCounter = 0;
+              if (complementCharges < 4) complementCharges++;
+            }
+          });
+          
+          const chargeGained = complementCharges === 1;
+          
+          complementCharges = origCharges;
+          complementKillCounter = origCounter;
+          return this.assert("Complement charge increments every 30 kills", chargeGained);
+        });
+
+        // Test 6: Barrier channel erosion & tunneling protection
+        test("Destructible barrier channel erosion & tunneling protection", () => {
+          const bar = new Barrier(100, 750);
+          const colWidth = bar.blockSize + bar.padding; // 7
+          const col = 2;
+          const bulletX = 100 + col * colWidth + colWidth / 2; // Center of col 2
+
+          // 1. Player bullet (reverse = true) traveling upwards
+          // Should hit the bottom-most active block (row 4) first
+          const pbBox1 = { x: bulletX - 3, y: 775, w: 6, h: 6 }; // y=775 <= 778 (bottom of row 4) and bottom y+h=781 >= 750 (startY)
+          const hitBlock1 = bar.checkCollision(pbBox1, true);
+          const isRow4 = hitBlock1 && hitBlock1.y === 750 + 4 * 7;
+
+          // Damage row 4 completely
+          if (hitBlock1) hitBlock1.hp = 0;
+
+          // Next check should hit row 3 (since row 4 is now inactive)
+          const pbBox2 = { x: bulletX - 3, y: 768, w: 6, h: 6 }; // y=768 <= 771 (bottom of row 3) and bottom y+h=774 >= 750
+          const hitBlock2 = bar.checkCollision(pbBox2, true);
+          const isRow3 = hitBlock2 && hitBlock2.y === 750 + 3 * 7;
+
+          // 2. Enemy bullet (reverse = false) traveling downwards
+          // Should hit the top-most active block (row 0) first
+          const ebBox1 = { x: bulletX - 3, y: 748, w: 6, h: 6 }; // y+h=754 >= 750 (top of row 0) and top y=748 <= 785 (barrierBottom)
+          const hitBlockEnemy = bar.checkCollision(ebBox1, false);
+          const isRow0 = hitBlockEnemy && hitBlockEnemy.y === 750;
+
+          // 3. Horizontal boundary test - adjacent column (col 3) should NOT hit col 2 blocks
+          const adjBulletX = 100 + 3 * colWidth + colWidth / 2;
+          const pbBoxAdj = { x: adjBulletX - 3, y: 768, w: 6, h: 6 };
+          const hitBlockAdj = bar.checkCollision(pbBoxAdj, true);
+          // Since all blocks in col 3 are at full health (hp=3), it should hit row 4 of col 3, not row 3 of col 2
+          const isCol3Row4 = hitBlockAdj && hitBlockAdj.y === 750 + 4 * 7 && hitBlockAdj.hp === 3;
+
+          return this.assert("Player bullet hits bottom active block first", isRow4) &&
+                 this.assert("Player bullet hits next active block up after bottom is destroyed", isRow3) &&
+                 this.assert("Enemy bullet hits top active block first", isRow0) &&
+                 this.assert("Collision is strictly column-isolated", isCol3Row4);
+        });
+
+        console.log(`%cDIAGNOSTICS COMPLETE: Passed ${passed}/${total} checks.`, 'font-weight: bold; color: #00f2fe;');
+        console.groupEnd();
+        return passed === total;
+      },
+      
+      grantAll() {
+        inventory.triple = 5;
+        inventory.rapid = 5;
+        inventory.cytokine = 5;
+        complementCharges = 4;
+        updateInventoryUI();
+        console.log("%cAll items and complement charges granted!", "color: #ffd700; font-weight: bold;");
+      },
+      
+      skipToBoss() {
+        if (state !== 'PLAYING') {
+          console.warn("Please start the game first.");
+          return;
+        }
+        stage = 5;
+        pathogens = [];
+        checkStageProgress();
+        console.log("%cSkipped to Stage 5 (Boss level)!", "color: #ff007f; font-weight: bold;");
+      },
+
+      setInvincible(val = true) {
+        window.immunityInvincible = val;
+        console.log(`%cPlayer invincibility set to: ${val}`, "color: #00ffff; font-weight: bold;");
+      }
+    };
+  </script>
+</body>
+</html>

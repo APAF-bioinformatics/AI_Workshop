@@ -1,0 +1,86 @@
+# RECREATING "IMMUNITY PROTOCOL" — REVERSE-ENGINEERED PROMPTS
+Language Stack: Single-file HTML5 web application containing embedded Vanilla CSS and modern Vanilla JavaScript, using the HTML5 Canvas 2D API and Web Audio API.
+
+---
+
+### PROMPT 1: SYSTEM ARCHITECTURE & AUDIO DESIGN
+"Create a single-file HTML5 web application utilizing a responsive, fixed-aspect-ratio Canvas (900x1000 native resolution) centered on the screen with a dark microscopic theme. Implement a procedural Web Audio system in Vanilla JavaScript using OscillatorNodes, GainNodes, and BiquadFilterNodes (no external audio files or libraries allowed). Configure the following audio synthesizer functions:
+- shoot: high-frequency square wave sweeping upward quickly.
+- hit: low triangle wave blending into noise decay.
+- lyse (explosion): sawtooth frequency drop with a white noise burst.
+- powerup: ascending major triad arpeggio.
+- levelUp: three-note rising melody.
+- playerHit: low sawtooth rumble with lowpass filtered noise.
+- gameOver: descending sawtooth sweep.
+- bossWarn: repeating alarm square wave tones.
+- complement: rising triangle sweeps mixed with high-frequency noise.
+- bossSweep: white noise sweeps mixed with low sawtooth tones.
+Add keyboard event listeners: 'M' to toggle audio mute state, 'P' to toggle the game pause state, and keys '1', '2', '3' to activate collected power-ups from the player cell's inventory (Triple Shot [1], Rapid Fire [2], Cytokine Storm [3] respectively). Display these keys and their active inventory counts in the UI. Additionally display the Complement Charge count with key '4' as the activation key in the same panel. Note: Extra Life (+1) power-ups do NOT use a key — they are auto-applied on contact."
+
+---
+
+### PROMPT 2: GRAPHICS, PARTICLES & DESTRUCTIBLE TISSUE BARRIERS
+"Write Vanilla JavaScript logic for the game's graphics and physical entities on the 2D Canvas:
+1. Background decoration: Draw a faint static microscope grid using TWO layers of dotted lines:
+    - Primary grid (100px spacing): rgba(0, 242, 254, 0.22), dash pattern [3, 15].
+    - Secondary finer grid (50px spacing): rgba(0, 242, 254, 0.08), dash pattern [2, 24].
+    This creates a realistic reticle-style microscope eyepiece effect.
+    Implement a depth-of-field effect with a drifting background layer: floating out-of-focus red blood cells, platelets, and faint pathogens (spiked viruses, green rod bacteria, and branched fungi) drifting slowly downward at visible opacity (0.12 to 0.26). Render these background drifters with ctx.filter = 'blur(4px)' before drawing and reset to 'none' after, to simulate specimen that is outside the focal plane of the microscope objective.
+2. Fluid Bullet Physics: Both player bullets and enemy bullets must simulate movement through a viscous biological medium. Each bullet instance has: age (seconds elapsed), driftAmp (random 18–32px for player, 12–22px for enemy), driftFreq (random 4–7 Hz for player, 3–6 Hz for enemy), and driftPhase (random). In each update(dt), lateral drift = driftAmp * cos(age * driftFreq + driftPhase) * dt, added to x position. This makes bullets curve sinusoidally as if buffeted by cytoplasmic flow.
+3. Particle Emitter: A lightweight particle engine handling custom position, count, spread angle, speed, color, velocity decay, gravity, and lifespan, allowing particles to fade out smoothly on destruction.
+4. Screen Shake: A system that offsets the canvas context view matrix briefly on key events (player hit, pathogen lysis, boss alarms). Tracked via shakeTimer and shakeIntensity.
+5. Life-Loss Blink: When the player loses a life, trigger a soft red screen flash (blinkTimer = 0.55s). In the draw loop, compute alpha = sin(ratio * π) * 0.2 where ratio = blinkTimer / 0.55, and fill the canvas with rgba(220, 30, 30, alpha). This creates a smooth bell-curve fade that is visible but will NOT trigger photosensitive epilepsy.
+6. Destructible Barriers: Four organic barriers positioned above the player. Construct each barrier using a 2D grid of 5 rows and 10 columns (block size 6x6px with 1px padding). Implement column-targeted hit detection for player bullets and enemy bullets to allow bullets to pass through destroyed channels without horizontal blocking: determine the exact column 'c' by division of the bullet bounding box's center X coordinate relative to the barrier's start X coordinate. Bullets will only check and collide with block layers in that specific column 'c' and cannot be blocked horizontally by adjacent columns. Implement tunneling-resistant boundary checks: player bullets traveling upwards (reverse=true) erode the column starting from the bottom-most active block of column 'c' up, triggering a collision if the bullet's top edge is at or below the bottom-most active block's bottom edge (and the bullet's bottom edge has not completely passed above the barrier's startY); enemy bullets traveling downwards erode the column starting from the top-most active block of column 'c' down, triggering a collision if the bullet's bottom edge is at or above the top-most active block's top edge (and the bullet's top edge has not completely passed below the barrier's bottom edge). When a block takes damage, decrease its health and color intensity/opacity. A single vertical column channel (all 5 layers of column 'c') must be completely destroyed before bullets passing through that column index can traverse the barrier without collision."
+
+---
+
+### PROMPT 3: PLAYER LINEAGES (CELL TYPES) & COMPLEMENT SYSTEM
+"Design the player input controller and three distinct playable immune cell lineages with meta-progression:
+- Movement/Controls: Left/Right movement via Arrow Keys or A/D incorporating snappy physics: high friction (18.0) and high acceleration (speed * friction * 1.5) to allow precise positioning of the cell without slidy horizontal drift.
+- Macrophage (Balanced Phagocyte): Standard speed (360px/s), fire rate (0.28s), 3 starting lives (max 5), Y-shaped antibody bullets. Single-lobed shifting nucleus.
+- Neutrophil (Rapid Responder): Unlocks at 100 total kills. High speed (470px/s), fast fire rate (0.16s), 2 starting lives (max 3), small yellow granule bullets. Multi-lobed nucleus connected by thin strands, granular cytoplasm.
+- NK Cell (Natural Killer): Unlocks at 300 total kills. Moderate speed (320px/s), fire rate (0.28s), 3 starting lives (max 4). ALWAYS fires a burst of 3 magenta perforin ring projectiles (center + ±0.18 dx spread) per trigger, each piercing up to 3 enemies. This makes it a high-damage area denial weapon. When Triple Shot is active, NK cell fires 3 rings per position × 3 positions = 9 rings total.
+Implement a Complement Bomb system: pressing key '4' uses 1 charge (calling updateInventoryUI() immediately) to generate an expanding golden wavefront starting at the player, clearing all hostile bullets, neutralizing standard pathogens (dealing 10 damage), and damaging the boss (dealing 15 damage). Accumulate progress on kills, awarding 1 charge every 30 kills up to a maximum of 4 charges. Display complement charge count in the inventory HUD panel with label 'Complement: X/4 [4]' in gold colour. Update the panel immediately when a new charge is earned or used, and ensure that the wave resets the 'damagedByWave' state of active pathogens and the boss at instantiation so subsequent waves damage them properly."
+
+---
+
+### PROMPT 4: PATHOGENS & MUTAGEN BOSS STATE MACHINE
+"Create the pathogen enemies and their movement patterns. Standard pathogens move in an invaders-like grid formation (sideways, descending by a gentle 12px upon hitting canvas side bounds, with speed scaling up as their numbers decrease). When forming the initial grid, arrange the pathogens in rows such that the toughest pathogens (3 HP Spike Virus) occupy the back rank/top rows, medium (2 HP Bacteria) in the middle, and weakest (1 HP Virus) at the front rank/bottom rows nearest the player (matching classic Space Invaders layout). Implement a dynamic Galaga-style swooping entry formation when a stage is initialized: pathogens enter the screen in a staggered stream (staggered by index * 0.15s), swooping from offscreen top-left (even columns) and top-right (odd columns) along Quadratic Bezier curves looping low near the center-bottom of the canvas before gliding to their home grid slots. The player is not locked and can move/shoot pathogens mid-flight immediately upon stage start. Keep the collective grid movement inactive as long as any pathogen is still swooping. Restrict pathogen random firing so that only the frontline pathogens (the lowest active pathogen in each column) can fire. If standard pathogens breach the defensive line and reach the player's Y coordinate level, trigger Game Over. Create a special Toxin Carrier (viroid capsule) representing the classic Space Invaders UFO: it sweeps horizontally across the top section of the screen every 15-35 seconds, awarding 500 bonus points and a guaranteed power-up drop when destroyed. Implement the following pathogen types:
+- Virus (1 HP): Red capsid core with 8 vibrating outer spikes.
+- Bacterium (2 HP): Green rod-shaped capsule with tail flagella and ciliated surface. Fires green bullets.
+- Spike Virus (3 HP): Amber spherical core with yellow receptor nodes. Fires amber spread bullets.
+Implement a Mutagen Boss ('Mutagen Cell') that spawns every 5 stages. Give the Boss 60 HP, a segmented HP bar (thirds), and a finite state machine (FSM) with ALL of the following states:
+- ENTRY: enters from top center.
+- PATROL: horizontal drift while firing triple shots. Randomly transitions to one of: CHARGE_UP, SUMMON, CHARGE_ATTACK, or SWEEP_BEAM.
+- CHARGE_UP: visual charging effect (boss glows gold). After 1.8s, plays bossWarn() and transitions to RADIAL_BURST.
+- RADIAL_BURST: fires bullets in 16 radial directions, then returns to PATROL.
+- SWEEP_BEAM: sweeps side-to-side at 300px/s for 3.5s while streaming 5-bullet downward fan spreads (−90°, −45°, 0°, +45°, +90°) with 25% probability per frame. Then returns to PATROL.
+- SUMMON: spawns Virus minions (up to 8 on-screen), then returns to PATROL.
+- CHARGE_ATTACK: locks player position, swoops down vertically for 1.2s, then returns up to y=220.
+- Enemies have a low (5%) chance to drop power-ups on death (T-Helper, Memory Cell, Plasma Cell, Cytokine Storm)."
+
+---
+
+### PROMPT 5: GAME ENGINE, POWER-UPS & HUD UI
+"Develop the game loop, physics engine, and UI HUD:
+1. Power-Ups and Collection Rules:
+   - T-Helper (T): Gold hexagon. Stored in inventory. Key '1' activates triple-shot weapon behavior for 12 seconds.
+   - Memory Cell (M): Cyan hexagon. Stored in inventory. Key '2' reduces weapon cooldown by 45% (rapid fire) for 12 seconds.
+   - Plasma Cell (+1): Green hexagon. AUTO-APPLIED IMMEDIATELY on contact — adds 1 life if below max capacity. Does NOT enter the inventory and has NO key binding. The player sees green particles burst and life count increase instantly.
+   - Cytokine Storm (C): Magenta hexagon. Stored in inventory. Key '3' instantly damages all active pathogens and shakes screen. Ensure that if the Cytokine Storm clears the final active pathogen, the game engine correctly detects this and advances the player to the next stage or spawns the boss.
+2. Collision Handlers:
+   - Player bullets vs Barriers, Pathogens, and UFO. Ensure player bullets correctly damage the organic barrier blocks.
+   - Enemy bullets and body contact vs Barriers and Player.
+   - Player contact with Power-ups: life power-ups auto-apply; all others add to inventory.
+3. HUD & Bottom Overlays:
+   - Top overlay containing Game Logo (with difficulty badge), Selected Lineage Name, Score, High Score, Stage number, Kill counter, Life icons (drawing mini-cells), and Complement charges (4 gold squares).
+   - Bottom area displays active power-up timers.
+   - Include a translucent control panel in the bottom-right corner showing: Sound state [M], Pause [P], inventory for Triple Shot [1], Rapid Fire [2], Cytokine [3], and Complement charge count with [4] key label (in gold to distinguish it from inventory items).
+4. Main Menu, Level Transitions, Pause & Game Over Screens:
+   - Difficulty selector on menu: EASY / NORMAL / HARD buttons. DIFF_CONFIGS provides speedMult, fireMult, hpMult. getDiffConfig() helper reads current difficulty. Difficulty badge shown in HUD.
+   - Top-5 persistent leaderboard in localStorage (shown on Game Over screen) with medals, lineage, score, stage.
+   - Add a 2-second level transition delay showing a 'STAGE CLEARED' text overlay before initializing the next wave or spawning the boss.
+   - Add a game pause overlay when 'P' is pressed showing 'BIOME DEFENSE PAUSED'.
+   - Menu displays lineage cards with unlock progression. Game Over shows run stats and leaderboard.
+5. Automated Diagnostics & Developer Tools:
+   - Expose a global testing suite under window.immunityTest containing: runAll() (which executes keyboard event mocks and checks game parameters like difficulty configurations, active power-up updates, lineage locks, audio toggle functionality, and complement charge logic, logging assertions to the browser console); grantAll() (sets inventory items to 5 and complements to 4); skipToBoss() (advances immediately to stage 5 boss); and setInvincible(boolean) (prevents the player cell from taking damage). Assemble everything into a single, fully-functional index.html file."
