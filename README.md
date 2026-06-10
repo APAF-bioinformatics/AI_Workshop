@@ -113,8 +113,8 @@ Verify that all setup items are successfully complete before starting the worksh
 - [ ] 2. Google Chrome is installed and set as default.
 - [ ] 3. Antigravity IDE is running and showing code workspace views.
 - [ ] 4. The workshop repository has been downloaded and unzipped.
-- [ ] 5. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
-- [ ] 6. Telemetry (and marketing emails) has been disabled in Advanced Settings.
+- [ ] 5. Telemetry (and marketing emails) has been disabled in Advanced Settings.
+- [ ] 6. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
 
 ---
 
