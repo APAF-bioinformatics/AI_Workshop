@@ -4,6 +4,8 @@ This file tracks all external URLs used in the AI Workshop (Immunity Protocol) p
 
 ## Tools & IDE
 - **Antigravity Official Page**: [antigravity.google](https://antigravity.google)
+- **Google Chrome Download Page**: [google.com/chrome](https://google.com/chrome)
+- **Google Account Creation Page**: [accounts.google.com/signup](https://accounts.google.com/signup)
 
 ## Assets & Fonts
 - **Google Fonts (Outfit & JetBrains Mono)**: [Google Fonts](https://fonts.googleapis.com)
