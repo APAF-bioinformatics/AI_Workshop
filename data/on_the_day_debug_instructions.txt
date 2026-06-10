@@ -12,7 +12,7 @@
 
 # Showcase the .gitignore and .aiignore files
 
-*   `.gitignore` is a standard configuration file that prevents Git from tracking unwanted files (such as local configuration files, logs, or system files like `.DS_Store`) in source control.
+*   `.gitignore` is a standard configuration file that prevents Git from tracking unwanted files (such as local configuration files, logs, or system files like `.DS_Store`) in source control. By default, the AI agent will also read it and ignore these files from being read or scanned.
 *   `.aiignore` is a specialized file used by autonomous coding agents (like Antigravity) to filter out files and folders that should not be parsed into the agent's context window. This prevents sensitive credentials, temporary build folders, or large datasets from leaking or wasting model tokens.
 
 # Showcasing a Skill File
