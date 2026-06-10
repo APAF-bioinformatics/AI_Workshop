@@ -10,8 +10,8 @@ Please complete the following checklist steps in order:
 - [ ] 1. Create a Google Account (see Section 1)
 - [ ] 2. Install Google Chrome Browser (see Section 2)
 - [ ] 3. Install Antigravity IDE (see Section 3)
-- [ ] 4. Disable Telemetry in Antigravity IDE (see Section 4)
-- [ ] 5. Install & Configure IDE Plugins (see Section 5)
+- [ ] 4. Install & Configure IDE Plugins (see Section 5)
+- [ ] 5. Disable Telemetry in Antigravity IDE (see Section 4)
 
 ---
 
@@ -45,26 +45,12 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 4. How to Disable Telemetry in Antigravity IDE
-
-To protect privacy and minimize network usage during the workshop, please disable telemetry:
-
-1. In the bottom-right corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item (as shown in Step 1 of Section 5).
-2. Click on the **Advanced Settings** link located at the bottom of the settings popup.
-3. In the Left Sidebar of the Advanced Settings window, select **Account**.
-4. In the **General** section, toggle the **Enable Telemetry** switch to **OFF** (gray/disabled).
-5. Optionally, you can also toggle the **Marketing Emails** switch to **OFF**.
-
-![Disable Telemetry](images/step6_disable_telemetry.png)
-
----
-
-## 5. How to Install & Configure Plugins
+## 4. How to Install & Configure Plugins
 
 Follow these step-by-step visual instructions to enable and manage plugins in the Antigravity IDE:
 
 ### Step 1: Open Settings
-In the bottom-left corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item.
+In the bottom-right corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item.
 
 ![Open Settings](images/step1_settings_button.png)
 
@@ -96,14 +82,28 @@ In the **Build With Google Plugins** overlay, you can enable or manage the stand
 
 ---
 
+## 4. How to Disable Telemetry in Antigravity IDE
+
+To protect privacy and minimize network usage during the workshop, please disable telemetry:
+
+1. In the bottom-right corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item (as shown in Step 1 of Section 5).
+2. Click on the **Advanced Settings** link located at the bottom of the settings popup.
+3. In the Left Sidebar of the Advanced Settings window, select **Account**.
+4. In the **General** section, toggle the **Enable Telemetry** switch to **OFF** (gray/disabled).
+5. Optionally, you can also toggle the **Marketing Emails** switch to **OFF**.
+
+![Disable Telemetry](images/step6_disable_telemetry.png)
+
+---
+
 ## ✅ Final Verification Checklist (End)
 
 Verify that all setup items are successfully complete before starting the workshop:
 - [ ] 1. Google Account is created and signed in.
 - [ ] 2. Google Chrome is installed and set as default.
 - [ ] 3. Antigravity IDE is running and showing code workspace views.
-- [ ] 4. Telemetry (and marketing emails) has been disabled in Advanced Settings.
-- [ ] 5. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
+- [ ] 4. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
+- [ ] 5. Telemetry (and marketing emails) has been disabled in Advanced Settings.
 
 ---
 
