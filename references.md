@@ -1,6 +1,6 @@
 # Project References
 
-This file tracks all external URLs used in the AI Workshop project to adhere to compliance rules.
+This file tracks all external URLs used in the AI Workshop (Immunity Protocol) project to adhere to compliance rules.
 
 ## Tools & IDE
 - **Antigravity Official Page**: [antigravity.google](https://antigravity.google)
@@ -15,5 +15,7 @@ This file tracks all external URLs used in the AI Workshop project to adhere to 
 
 ## Backup & Repository
 - **GitHub Repository**: [AI_Workshop](https://github.com/APAF-bioinformatics/AI_Workshop)
+- **Previous Repository Name**: [AI_Workshop_Preparations Backup](https://github.com/APAF-bioinformatics/AI_Workshop_Preparations)
 
 <!-- APAF Bioinformatics | references.md | Approved | 2026-06-10 -->
+
