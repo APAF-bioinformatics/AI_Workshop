@@ -7,7 +7,7 @@ This guide provides instructions on how to install the Antigravity IDE and confi
 ## 1. How to Install Antigravity IDE
 
 1. Navigate to the official download page: [antigravity.google](https://antigravity.google)
-2. Download the installer compatible with your operating system (macOS, Windows, or Linux).
+2. **Important**: Download the **Antigravity IDE** installer compatible with your operating system (macOS, Windows, or Linux) which allows you to view and edit the workspace codes, and **not** the chat-only "vibe coding" version.
 3. Run the installer and follow the on-screen prompts to complete the installation.
 
 ---

@@ -1,0 +1,81 @@
+# Initially Building the Game
+
+* These are just for demo; you can ignore this section.
+* Please respect the `.aiignore` file and do not read any secret files inside the `data/` folder.
+* Please read the game prompts from `game_prompts.txt` and provide a detailed implementation plan.
+* As it takes a lot of tokens and time to build this (it will take up most of the free tokens without teaching you much), a starter file is already prepared for you: see `data/index_to_debug.html`.
+
+# Download the Pre-Made Code, index.html, and Supporting Files
+
+* Copy `data/index_to_debug.html` out of the `data/` directory, place it into the root directory (up one level in the directory tree), and rename it as `index.html`.
+* Read `index.html`.
+
+# Showcasing a Skill File
+
+* I had asked Antigravity the following question:
+  > "What is a skill I should add in the local .gemini/skills/ folder for the sake of HTML and javascript games development, especially for debugging the game?"
+
+* Here is the response:
+  > I have created the custom skill `canvas-game-diagnostics/SKILL.md` in the local workspace directory.
+  >
+  > **Summary of the Custom Skill: canvas-game-diagnostics**
+  > - *Frame-Rate Independent Physics*: Damping and friction updates using exponential decay equations instead of unstable Euler integration.
+  > - *Tunneling Prevention*: Minimum distance calculation from a point to a line segment to prevent high-speed entities from bypassing boundaries or targets.
+  > - *Performance & Canvas Auditing*: Guidelines for matching `ctx.save()` and `ctx.restore()`, minimizing inner-loop garbage collection thrashing, and event listener cleanups.
+  > - *Web Audio Gesture Handlers*: Best practice templates to resume the browser's `AudioContext` only after explicit user interaction events.
+
+# Player Movement
+
+* Find the region of code that handles the movement of the player's cell.
+* Once identified, modify the code to address the following:
+  * The horizontal movement of the player is very jerky, lacks fine control, and changes position erratically. Please resolve this.
+
+# Complement Power-Up Text
+
+* Locate where the complement power-up information text is displayed in the HUD/bottom panel.
+* Once identified, modify the code to address the following:
+  * The complement power-up text at the bottom overflows past the right edge of the screen. Please fix this alignment issue.
+
+# Barrier Shield
+
+* Find the region of code that handles damage to the barrier shields.
+* Once identified, modify the code to address the following:
+  * Each barrier consists of multiple rows, spanning from the player's side to the enemy's side. Damage must progress layer-by-layer: the player should damage the side closest to them, while enemies damage the far side. Currently, the barrier incorrectly starts taking damage from the second row on the player's side. Instead, player bullets must damage the first row first, then the second, and so on. A bullet should only pass through to the pathogens once all barrier blocks in that specific column have been destroyed. The same logic applies in reverse for pathogen bullets. No bullets—from either the player or pathogens—should ever pass through a barrier column if any active blocks remain in that column. Please fix the above accordingly.
+* During testing, fire multiple shots (press the spacebar repeatedly) while positioned behind a barrier and capture screenshots. Also wait for the pathogens to damage the barrier and take screenshots.
+
+# First Boss Stage
+
+* To facilitate testing without playing through 5 stages, temporarily implement a shortcut key (`8`) to skip to the boss stage at any point during gameplay.
+* Find the region of code that deals with boss stages.
+* Once identified, modify the code to address the following:
+  * The first boss stage freezes at the start, preventing gameplay. Please fix this.
+  * Enable pressing the `8` shortcut key multiple times to progressively skip to the next boss stage (e.g., Stage 5, then Stage 10, Stage 15, and so on).
+  * Once boss stages are verified, remove the `8` shortcut key from the game.
+
+# Cell Selection
+
+* Find the region of code that handles cell lineage selection prior to starting the game.
+* Once identified, modify the code to address the following:
+  * The Natural Killer (NK) cell and Neutrophil must be locked initially, and unlocked only after the player reaches a specific score threshold.
+
+## Testing Notes: Managing Cell Unlocks & High Scores
+
+To clear your persistent high score, run the following command in your browser's Developer Tools Console (accessible via `F12` or `Cmd+Option+I` on Mac):
+
+```javascript
+localStorage.removeItem('immunity_highscore');
+```
+
+To clear both the high score and the top 5 leaderboards, run:
+
+```javascript
+localStorage.clear();
+```
+
+To quickly unlock both the NK cells and Neutrophils for testing, set your high score to 15,000 points by running the following command in the console, then reload the page:
+
+```javascript
+localStorage.setItem('immunity_highscore', '15000');
+```
+
+*(Note: Setting this value directly unlocks both cells on the selection screen when clicking "START SYSTEM" without needing to achieve the score in gameplay.)*

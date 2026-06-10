@@ -1,0 +1,2713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immunity Protocol - Biome Defense</title>
+    <!-- Modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #03030c;
+            --panel-bg: rgba(10, 10, 25, 0.85);
+            --border-glow: #00f3ff;
+            --accent-gold: #ffd700;
+            --accent-magenta: #ff00ff;
+            --accent-yellow: #ffff00;
+            --accent-green: #39ff14;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 243, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 255, 0.05) 0%, transparent 40%);
+        }
+
+        /* Responsive centered container */
+        .game-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 900px;
+            padding: 10px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 9 / 10;
+            background: #020208;
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 12px;
+            box-shadow: 
+                0 0 20px rgba(0, 0, 0, 0.8),
+                0 0 30px rgba(0, 243, 255, 0.15);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        canvas.boss-active {
+            border-color: rgba(255, 0, 255, 0.5);
+            box-shadow: 
+                0 0 20px rgba(0, 0, 0, 0.8),
+                0 0 30px rgba(255, 0, 255, 0.2);
+        }
+
+        /* Accessible instructions */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="sr-only">Immunity Protocol - Biome Defense</h1>
+    
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="900" height="1000" tabindex="1"></canvas>
+    </div>
+
+    <script>
+        // --- CONSTANTS & CONFIGURATION ---
+        const CANVAS_WIDTH = 900;
+        const CANVAS_HEIGHT = 1000;
+
+        const DIFF_CONFIGS = {
+            EASY: { name: 'EASY', speedMult: 0.7, fireMult: 0.7, hpMult: 0.8, scoreMult: 0.8, color: '#39ff14' },
+            NORMAL: { name: 'NORMAL', speedMult: 1.0, fireMult: 1.0, hpMult: 1.0, scoreMult: 1.0, color: '#00f3ff' },
+            HARD: { name: 'HARD', speedMult: 1.35, fireMult: 1.3, hpMult: 1.3, scoreMult: 1.5, color: '#ff3333' }
+        };
+
+        // --- PROCEDURAL AUDIO SYNTHESIZER ---
+        class AudioManager {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+                this.noiseBuffer = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+                this.createNoiseBuffer();
+            }
+
+            createNoiseBuffer() {
+                if (!this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 2;
+                this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = this.noiseBuffer.getChannelData(0);
+                // Safe non-imperative array mapping using Float32Array
+                data.forEach((_, i) => {
+                    data[i] = Math.random() * 2 - 1;
+                });
+            }
+
+            playNoise(duration, filterFreq, type = 'lowpass', volume = 0.3) {
+                if (!this.ctx || this.muted) return null;
+                
+                const noiseNode = this.ctx.createBufferSource();
+                noiseNode.buffer = this.noiseBuffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = type;
+                filter.frequency.setValueAtTime(filterFreq, this.ctx.currentTime);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                noiseNode.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noiseNode.start();
+                noiseNode.stop(this.ctx.currentTime + duration);
+                return noiseNode;
+            }
+
+            shoot() {
+                if (!this.ctx || this.muted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1600, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+
+            hit() {
+                if (!this.ctx || this.muted) return;
+                // Triangle sweep
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.12);
+
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+
+                // Quick noise burst
+                this.playNoise(0.08, 1200, 'bandpass', 0.15);
+            }
+
+            lyse() {
+                if (!this.ctx || this.muted) return;
+                // Sawtooth sweep down
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(380, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.35);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+
+                // High intensity white noise burst
+                this.playNoise(0.4, 600, 'lowpass', 0.25);
+            }
+
+            powerup() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                // C major triad arpeggio: C5 (523Hz), E5 (659Hz), G5 (784Hz), C6 (1046Hz)
+                const freqs = [523.25, 659.25, 783.99, 1046.50];
+                freqs.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                    
+                    gain.gain.setValueAtTime(0.0, now);
+                    gain.gain.setValueAtTime(0.08, now + idx * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.18);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now + idx * 0.07);
+                    osc.stop(now + idx * 0.07 + 0.2);
+                });
+            }
+
+            levelUp() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                const freqs = [440, 554.37, 659.25]; // A4, C#5, E5 rising
+                freqs.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    
+                    gain.gain.setValueAtTime(0.0, now);
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.25);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.3);
+                });
+            }
+
+            playerHit() {
+                if (!this.ctx || this.muted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(80, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(20, this.ctx.currentTime + 0.45);
+
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+
+                // Low-pass filtered noise rumble
+                this.playNoise(0.5, 200, 'lowpass', 0.45);
+            }
+
+            gameOver() {
+                if (!this.ctx || this.muted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 1.4);
+
+                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 1.5);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 1.5);
+            }
+
+            bossWarn() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                // Repeating alert alarm alternating frequencies
+                const iterations = Array.from({ length: 6 });
+                iterations.forEach((_, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'square';
+                    const freq = (i % 2 === 0) ? 440 : 550;
+                    osc.frequency.setValueAtTime(freq, now + i * 0.25);
+                    
+                    gain.gain.setValueAtTime(0.0, now);
+                    gain.gain.setValueAtTime(0.12, now + i * 0.25);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.25 + 0.22);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now + i * 0.25);
+                    osc.stop(now + i * 0.25 + 0.25);
+                });
+            }
+
+            complement() {
+                if (!this.ctx || this.muted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1400, this.ctx.currentTime + 0.5);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.6);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.6);
+
+                // High-frequency sweep noise
+                this.playNoise(0.6, 3000, 'highpass', 0.25);
+            }
+
+            bossSweep() {
+                if (!this.ctx || this.muted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(65, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.8);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.8);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.8);
+
+                // Sweep noise
+                this.playNoise(0.8, 500, 'bandpass', 0.3);
+            }
+        }
+
+        const audio = new AudioManager();
+
+        // --- LINEAGE DEFINITIONS ---
+        const LINEAGES = [
+            {
+                id: 'MACROPHAGE',
+                name: 'MACROPHAGE',
+                subname: 'Balanced Phagocyte',
+                color: '#00f3ff', // Cyan
+                maxLives: 5,
+                startLives: 3,
+                speed: 360,
+                fireCooldown: 0.28,
+                desc: 'Cyan. Starts with 3 lives. Balanced speed, fires custom Y-shaped antibody bullets. Shifting single-lobed nucleus.',
+                bulletType: 'antibody',
+                drawNucleus: (ctx, x, y, size, pulse) => {
+                    ctx.fillStyle = 'rgba(0, 243, 255, 0.4)';
+                    ctx.beginPath();
+                    const nx = x + Math.cos(pulse) * (size * 0.15);
+                    const ny = y + Math.sin(pulse) * (size * 0.15);
+                    ctx.arc(nx, ny, size * 0.35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            },
+            {
+                id: 'NATURAL_KILLER',
+                name: 'NATURAL KILLER',
+                subname: 'High Fire Power',
+                color: '#ff00ff', // Magenta
+                maxLives: 4,
+                startLives: 3,
+                speed: 320,
+                fireCooldown: 0.30,
+                desc: 'Magenta. Projects massive ring perforins. Bullet pierce max 3 targets. Multi-lobes nucleus.',
+                bulletType: 'perforin',
+                drawNucleus: (ctx, x, y, size, pulse) => {
+                    ctx.fillStyle = 'rgba(255, 0, 255, 0.4)';
+                    const lobes = [
+                        { dx: -0.2, dy: -0.15 },
+                        { dx: 0.2, dy: -0.1 },
+                        { dx: 0.05, dy: 0.2 }
+                    ];
+                    lobes.forEach(lobe => {
+                        ctx.beginPath();
+                        const nx = x + (lobe.dx * size) + Math.cos(pulse + lobe.dx * 10) * (size * 0.05);
+                        const ny = y + (lobe.dy * size) + Math.sin(pulse + lobe.dy * 10) * (size * 0.05);
+                        ctx.arc(nx, ny, size * 0.2, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+            },
+            {
+                id: 'NEUTROPHIL',
+                name: 'NEUTROPHIL',
+                subname: 'High Speed Responder',
+                color: '#ffff00', // Yellow
+                maxLives: 3,
+                startLives: 3,
+                speed: 470,
+                fireCooldown: 0.23,
+                desc: 'Yellow. Granulocyte. Fast movement, fires highly rapid streams of yellow granule dots. Lobulated nucleus.',
+                bulletType: 'granule',
+                drawNucleus: (ctx, x, y, size, pulse) => {
+                    ctx.fillStyle = 'rgba(255, 255, 0, 0.35)';
+                    ctx.beginPath();
+                    const nx1 = x - size * 0.15 + Math.cos(pulse) * 3;
+                    const ny1 = y + Math.sin(pulse) * 3;
+                    const nx2 = x + size * 0.15 + Math.cos(pulse + Math.PI) * 3;
+                    const ny2 = y + Math.sin(pulse + Math.PI) * 3;
+                    ctx.arc(nx1, ny1, size * 0.22, 0, Math.PI * 2);
+                    ctx.arc(nx2, ny2, size * 0.22, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Connection path
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.35)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(nx1, ny1);
+                    ctx.lineTo(nx2, ny2);
+                    ctx.stroke();
+                }
+            }
+        ];
+
+        // --- ENTITY CLASSES ---
+        class PlayerCell {
+            constructor(lineage) {
+                this.lineage = lineage;
+                this.x = CANVAS_WIDTH / 2;
+                this.y = 860;
+                this.size = 32;
+                this.vx = 0;
+                this.lives = lineage.startLives;
+                this.maxLives = lineage.maxLives;
+                this.speed = lineage.speed;
+                this.fireTimer = 0;
+                this.invincibilityTimer = 0;
+                this.pulse = 0;
+            }
+
+            update(dt, keys, tripleShotActive, rapidFireActive) {
+                this.pulse += dt * 4;
+                
+                // Keyboard controls
+                let moveDir = 0;
+                if (keys['ArrowLeft'] || keys['KeyA'] || keys['a']) moveDir = -1;
+                if (keys['ArrowRight'] || keys['KeyD'] || keys['d']) moveDir = 1;
+
+                // Physics (Friction and Snappy acceleration)
+                const friction = 18.0;
+                const accel = this.speed * friction * 1.5;
+                const targetAccel = moveDir * accel;
+
+                // Analytical solution for velocity update to prevent numerical instability at variable dt
+                const decay = Math.exp(-friction * dt);
+                this.vx = this.vx * decay + (targetAccel / friction) * (1 - decay);
+                this.x += this.vx * dt;
+
+                // Screen constraint
+                const limit = this.size + 15;
+                if (this.x < limit) {
+                    this.x = limit;
+                    this.vx = 0;
+                }
+                if (this.x > CANVAS_WIDTH - limit) {
+                    this.x = CANVAS_WIDTH - limit;
+                    this.vx = 0;
+                }
+
+                // Invincibility cooldown
+                if (this.invincibilityTimer > 0) {
+                    this.invincibilityTimer -= dt;
+                }
+
+                // Fire cooldown timer
+                if (this.fireTimer > 0) {
+                    const cooldownMult = rapidFireActive ? 0.55 : 1.0;
+                    this.fireTimer -= dt;
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                
+                // Invincibility flashing effect
+                if (this.invincibilityTimer > 0 && Math.floor(this.invincibilityTimer * 10) % 2 === 0) {
+                    ctx.restore();
+                    return;
+                }
+
+                // Outer membrane glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.lineage.color;
+                
+                // Draw outer cytoplasm
+                ctx.strokeStyle = this.lineage.color;
+                ctx.lineWidth = 3;
+                ctx.fillStyle = 'rgba(10, 10, 30, 0.7)';
+                ctx.beginPath();
+                // Create an organic wobbly cell shape
+                const numPoints = 12;
+                Array.from({ length: numPoints }).forEach((_, i) => {
+                    const angle = (i / numPoints) * Math.PI * 2;
+                    const wobble = Math.sin(this.pulse + angle * 3) * 2;
+                    const r = this.size + wobble;
+                    const px = this.x + Math.cos(angle) * r;
+                    const py = this.y + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Clear shadow for interior
+                ctx.shadowBlur = 0;
+
+                // Draw lineage specific nucleus
+                this.lineage.drawNucleus(ctx, this.x, this.y, this.size, this.pulse);
+
+                ctx.restore();
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, vx, vy, isEnemy, bulletType, color, pierceMax = 1) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.isEnemy = isEnemy;
+                this.bulletType = bulletType; // 'antibody', 'perforin', 'granule', 'standard'
+                this.color = color;
+                this.size = isEnemy ? 6 : (bulletType === 'perforin' ? 18 : (bulletType === 'granule' ? 5 : 8));
+                this.pierceCount = 0;
+                this.pierceMax = pierceMax;
+                this.damagedIds = []; // Stores IDs of hit enemies to prevent double damage
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+
+                if (this.bulletType === 'antibody') {
+                    // Y-shaped antibody bullet
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y + 6);
+                    ctx.lineTo(this.x, this.y - 2);
+                    ctx.moveTo(this.x, this.y - 2);
+                    ctx.lineTo(this.x - 5, this.y - 8);
+                    ctx.moveTo(this.x, this.y - 2);
+                    ctx.lineTo(this.x + 5, this.y - 8);
+                    ctx.stroke();
+                } else if (this.bulletType === 'perforin') {
+                    // Magenta expanding ring perforin
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else if (this.bulletType === 'granule') {
+                    // Yellow small dot
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Standard circle pathogen/enemy bullets
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Pathogen {
+            constructor(id, type, x, y, difficultyHpMult) {
+                this.id = id;
+                this.type = type; // 'virus' (1HP), 'bacterium' (2HP), 'spike' (3HP)
+                this.x = x;
+                this.y = y;
+                this.maxHp = Math.ceil((type === 'virus' ? 1 : (type === 'bacterium' ? 2 : 3)) * difficultyHpMult);
+                this.hp = this.maxHp;
+                this.pulse = Math.random() * 10;
+                
+                // Drawing properties
+                if (type === 'virus') {
+                    this.size = 20;
+                    this.color = '#ff3333'; // Red
+                } else if (type === 'bacterium') {
+                    this.size = 22;
+                    this.color = '#39ff14'; // Green
+                } else {
+                    this.size = 25;
+                    this.color = '#ffaa00'; // Amber
+                }
+            }
+
+            update(dt, moveX, moveY) {
+                this.x += moveX;
+                this.y += moveY;
+                this.pulse += dt * 5;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+
+                if (this.type === 'virus') {
+                    // Red capsid core with 8 vibrating outer spikes
+                    ctx.fillStyle = 'rgba(255, 51, 51, 0.2)';
+                    ctx.strokeStyle = '#ff3333';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Spikes
+                    const numSpikes = 8;
+                    Array.from({ length: numSpikes }).forEach((_, i) => {
+                        const angle = (i / numSpikes) * Math.PI * 2;
+                        const spikeLen = this.size * 1.1 + Math.sin(this.pulse + i) * 3;
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(this.x + Math.cos(angle) * spikeLen, this.y + Math.sin(angle) * spikeLen);
+                        ctx.stroke();
+                        // Receptor dot
+                        ctx.beginPath();
+                        ctx.arc(this.x + Math.cos(angle) * spikeLen, this.y + Math.sin(angle) * spikeLen, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ff5555';
+                        ctx.fill();
+                    });
+                } 
+                else if (this.type === 'bacterium') {
+                    // Green rod-shaped capsule with tail flagella and ciliated surface
+                    ctx.strokeStyle = '#39ff14';
+                    ctx.fillStyle = 'rgba(57, 255, 20, 0.2)';
+                    ctx.lineWidth = 2.5;
+                    
+                    ctx.save();
+                    ctx.translate(this.x, this.y);
+                    
+                    // Draw rod capsule
+                    ctx.beginPath();
+                    ctx.arc(-8, 0, 10, Math.PI/2, -Math.PI/2);
+                    ctx.lineTo(8, -10);
+                    ctx.arc(8, 0, 10, -Math.PI/2, Math.PI/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Tiny cilia hair animations
+                    const numCilia = 10;
+                    Array.from({ length: numCilia }).forEach((_, i) => {
+                        const angle = (i / numCilia) * Math.PI * 2;
+                        const hairLen = 4 + Math.sin(this.pulse + i * 2) * 2;
+                        const hx = Math.cos(angle) * 12;
+                        const hy = Math.sin(angle) * 10;
+                        ctx.beginPath();
+                        ctx.moveTo(hx, hy);
+                        ctx.lineTo(hx + Math.cos(angle) * hairLen, hy + Math.sin(angle) * hairLen);
+                        ctx.stroke();
+                    });
+
+                    // Flagella tail
+                    ctx.strokeStyle = 'rgba(57, 255, 20, 0.8)';
+                    ctx.beginPath();
+                    ctx.moveTo(-18, 0);
+                    // Wave motion flagella
+                    const waveY = Math.sin(this.pulse) * 8;
+                    const waveY2 = Math.cos(this.pulse * 1.5) * 6;
+                    ctx.bezierCurveTo(-25, waveY, -32, waveY2, -40, waveY);
+                    ctx.stroke();
+
+                    ctx.restore();
+                } 
+                else {
+                    // Spike virus: Amber spherical core with yellow receptor nodes
+                    ctx.fillStyle = 'rgba(255, 170, 0, 0.25)';
+                    ctx.strokeStyle = '#ffaa00';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Outer yellow receptor nodes
+                    const numNodes = 10;
+                    Array.from({ length: numNodes }).forEach((_, i) => {
+                        const angle = (i / numNodes) * Math.PI * 2 + (this.pulse * 0.05);
+                        const nodeDist = this.size * 0.95 + Math.cos(this.pulse * 1.2 + i) * 2.5;
+                        const nx = this.x + Math.cos(angle) * nodeDist;
+                        const ny = this.y + Math.sin(angle) * nodeDist;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, this.y);
+                        ctx.lineTo(nx, ny);
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.arc(nx, ny, 4.5, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffff00';
+                        ctx.fill();
+                        ctx.stroke();
+                    });
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class MutagenBoss {
+            constructor(difficultyHpMult) {
+                this.x = CANVAS_WIDTH / 2;
+                this.y = -150; // Entry offscreen
+                this.targetY = 220;
+                this.size = 60;
+                this.maxHp = Math.ceil(60 * difficultyHpMult);
+                this.hp = this.maxHp;
+                
+                // FSM states: 'ENTRY', 'PATROL', 'CHARGE_UP', 'RADIAL_BURST', 'CHARGE_ATTACK'
+                this.state = 'ENTRY';
+                this.stateTimer = 0;
+                this.patrolDir = 1;
+                this.pulse = 0;
+                this.patrolSpeed = 160;
+                this.color = '#ff00ff';
+                this.glowVal = 0;
+                this.swoopSpeed = 500;
+                this.swoopProgress = 0;
+                this.lockedPlayerX = 0;
+            }
+
+            update(dt, playerX, speedMult) {
+                this.pulse += dt * 6;
+                this.stateTimer += dt;
+
+                switch(this.state) {
+                    case 'ENTRY':
+                        // Move down from top center
+                        this.y += 180 * dt;
+                        if (this.y >= this.targetY) {
+                            this.y = this.targetY;
+                            this.state = 'PATROL';
+                            this.stateTimer = 0;
+                        }
+                        break;
+
+                    case 'PATROL':
+                        // Drift sideways
+                        this.x += this.patrolSpeed * this.patrolDir * speedMult * dt;
+                        if (this.x > CANVAS_WIDTH - this.size - 40) {
+                            this.x = CANVAS_WIDTH - this.size - 40;
+                            this.patrolDir = -1;
+                        }
+                        if (this.x < this.size + 40) {
+                            this.x = this.size + 40;
+                            this.patrolDir = 1;
+                        }
+
+                        // Transition logic: transition to attack modes randomly after 3.5s
+                        if (this.stateTimer > 3.5) {
+                            this.stateTimer = 0;
+                            const randVal = Math.random();
+                            if (randVal < 0.5) {
+                                this.state = 'CHARGE_UP';
+                                audio.bossWarn();
+                            } else {
+                                this.state = 'CHARGE_ATTACK';
+                                this.lockedPlayerX = playerX;
+                                this.swoopProgress = 0;
+                            }
+                        }
+                        break;
+
+                    case 'CHARGE_UP':
+                        // Glow intense gold for 1.8s
+                        this.glowVal = Math.sin(this.stateTimer * 15) * 20 + 20;
+                        if (this.stateTimer >= 1.8) {
+                            this.state = 'RADIAL_BURST';
+                            this.stateTimer = 0;
+                        }
+                        break;
+
+                    case 'RADIAL_BURST':
+                        // Handled in main game script: spawns 16 bullets, then resets to PATROL
+                        this.state = 'PATROL';
+                        this.stateTimer = 0;
+                        this.glowVal = 0;
+                        break;
+
+                    case 'CHARGE_ATTACK':
+                        // Locks player position and swoops vertically for 1.2s
+                        // Move boss down to player level
+                        const duration = 1.2;
+                        const t = this.stateTimer / duration;
+                        if (t <= 0.5) {
+                            // Swoop down towards player (t: 0 to 0.5)
+                            const p = t / 0.5; // normalized 0 to 1
+                            this.y = this.targetY + (860 - this.targetY) * p;
+                            // Move horizontally to player locked coordinate
+                            this.x = this.x + (this.lockedPlayerX - this.x) * p * 0.1;
+                        } else if (t < 1.0) {
+                            // Swoop back up (t: 0.5 to 1.0)
+                            const p = (t - 0.5) / 0.5; // normalized 0 to 1
+                            this.y = 860 - (860 - this.targetY) * p;
+                        } else {
+                            this.y = this.targetY;
+                            this.state = 'PATROL';
+                            this.stateTimer = 0;
+                        }
+                        break;
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                
+                // Color glows based on state
+                let renderColor = '#ff00ff'; // default magenta
+                if (this.state === 'CHARGE_UP') {
+                    renderColor = '#ffd700'; // gold
+                } else if (this.state === 'CHARGE_ATTACK') {
+                    renderColor = '#ff3333'; // violent red
+                }
+
+                ctx.shadowBlur = 18 + this.glowVal;
+                ctx.shadowColor = renderColor;
+                ctx.strokeStyle = renderColor;
+                ctx.fillStyle = 'rgba(10, 5, 20, 0.85)';
+                ctx.lineWidth = 4;
+
+                // Draw organic segmented boss cell with inner structures
+                ctx.beginPath();
+                const points = 18;
+                Array.from({ length: points }).forEach((_, i) => {
+                    const angle = (i / points) * Math.PI * 2;
+                    const wobble = Math.sin(this.pulse + angle * 4) * 5;
+                    const r = this.size + wobble;
+                    const px = this.x + Math.cos(angle) * r;
+                    const py = this.y + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw segmented nucleus center
+                ctx.fillStyle = 'rgba(255, 0, 255, 0.25)';
+                if (this.state === 'CHARGE_UP') ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                const nucleusPositions = [
+                    { dx: -12, dy: -8, size: 16 },
+                    { dx: 14, dy: -12, size: 14 },
+                    { dx: 4, dy: 16, size: 18 }
+                ];
+                nucleusPositions.forEach(n => {
+                    ctx.beginPath();
+                    const nx = this.x + n.dx + Math.cos(this.pulse * 0.8 + n.dx) * 3;
+                    const ny = this.y + n.dy + Math.sin(this.pulse * 0.8 + n.dy) * 3;
+                    ctx.arc(nx, ny, n.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Connecting nuclear links
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(this.x - 12, this.y - 8);
+                ctx.lineTo(this.x + 14, this.y - 12);
+                ctx.lineTo(this.x + 4, this.y + 16);
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        class BarrierBlock {
+            constructor(x, y, size, row = 0, col = 0) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.maxHp = 3;
+                this.hp = this.maxHp;
+                this.row = row;
+                this.col = col;
+            }
+
+            draw(ctx) {
+                if (this.hp <= 0) return;
+                ctx.save();
+                const opacity = this.hp / this.maxHp;
+                ctx.fillStyle = `rgba(0, 243, 255, ${opacity * 0.85})`;
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(0, 243, 255, 0.5)';
+                
+                // Draw rounded microscopic organic cell blocks
+                ctx.beginPath();
+                ctx.arc(this.x + this.size/2, this.y + this.size/2, this.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        class Barrier {
+            constructor(startX, y) {
+                this.blocks = [];
+                const rows = 5;
+                const cols = 10;
+                const blockSize = 6;
+                const padding = 1;
+
+                // Create organic rectangular barrier blocks grid
+                const iterationsRows = Array.from({ length: rows });
+                const iterationsCols = Array.from({ length: cols });
+                
+                iterationsRows.forEach((_, r) => {
+                    iterationsCols.forEach((_, c) => {
+                        const bx = startX + c * (blockSize + padding);
+                        const by = y + r * (blockSize + padding);
+                        this.blocks.push(new BarrierBlock(bx, by, blockSize, r, c));
+                    });
+                });
+            }
+
+            draw(ctx) {
+                // Functional data loop to draw active blocks
+                this.blocks.forEach(block => block.draw(ctx));
+            }
+        }
+
+        class PowerUp {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'T', 'M', 'P', 'C'
+                this.size = 14;
+                this.vy = 120; // Falling speed px/s
+                this.pulse = Math.random() * 5;
+                
+                // Color configuration
+                this.color = '#ffffff';
+                if (type === 'T') this.color = '#ffd700'; // Gold Hexagon
+                else if (type === 'M') this.color = '#00f3ff'; // Cyan Hexagon
+                else if (type === 'P') this.color = '#39ff14'; // Green Hexagon (Extra life)
+                else if (type === 'C') this.color = '#ff00ff'; // Magenta Hexagon
+            }
+
+            update(dt) {
+                this.y += this.vy * dt;
+                this.pulse += dt * 4;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2.5;
+                ctx.fillStyle = 'rgba(5, 5, 20, 0.85)';
+
+                // Draw pulsing hexagon shape
+                ctx.beginPath();
+                const scale = 1 + Math.sin(this.pulse) * 0.08;
+                const radius = this.size * scale;
+                Array.from({ length: 6 }).forEach((_, i) => {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const px = this.x + Math.cos(angle) * radius;
+                    const py = this.y + Math.sin(angle) * radius;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw central letter symbol
+                ctx.fillStyle = this.color;
+                ctx.font = '800 11px Outfit';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const label = this.type === 'P' ? '+1' : this.type;
+                ctx.fillText(label, this.x, this.y + 0.5);
+
+                ctx.restore();
+            }
+        }
+
+        class ComplementWave {
+            constructor(startX, startY) {
+                this.x = startX;
+                this.y = startY;
+                this.radius = 0;
+                this.maxRadius = 1100;
+                this.speed = 1000; // expansion speed px/s
+                this.pathogensHit = []; // Prevents double hits
+                this.bossHit = false;
+            }
+
+            update(dt) {
+                this.radius += this.speed * dt;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                // Golden glowing rings
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.75)';
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = '#ffd700';
+                
+                // Double concentric expanding rings
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0, this.radius - 25), 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            isFinished() {
+                return this.radius >= this.maxRadius;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.vx = (Math.random() - 0.5) * 250;
+                this.vy = (Math.random() - 0.5) * 250;
+                this.size = Math.random() * 4 + 2;
+                this.life = 0.5; // lifetime in seconds
+                this.maxLife = 0.5;
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.vx *= 0.96; // slight drag
+                this.vy *= 0.96;
+                this.life -= dt;
+            }
+
+            draw(ctx) {
+                if (this.life <= 0) return;
+                ctx.save();
+                const opacity = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = opacity;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- GAME ENGINE STATE & SYSTEM ---
+        class BiomeGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Game States: 'MENU', 'LINEAGE_SELECT', 'PLAYING', 'STAGE_CLEAR', 'GAME_OVER', 'PAUSED'
+                this.state = 'MENU';
+                this.selectedDiff = 'NORMAL';
+                this.selectedLineageIndex = 0;
+                
+                this.player = null;
+                this.bullets = [];
+                this.pathogens = [];
+                this.boss = null;
+                this.barriers = [];
+                this.powerUps = [];
+                this.waves = [];
+                this.particles = [];
+                
+                // UI & Statistics
+                this.score = 0;
+                this.highScore = parseInt(localStorage.getItem('immunity_highscore')) || 0;
+                this.stage = 1;
+                this.kills = 0;
+                this.killsForComplement = 0;
+                
+                // Active inventory counts
+                this.inventory = {
+                    T: 0, // Triple shot
+                    M: 0, // Rapid fire
+                    C: 0  // Cytokine Storm
+                };
+                
+                // Power-up durations remaining
+                this.activeTimers = {
+                    tripleShot: 0,
+                    rapidFire: 0
+                };
+                
+                this.complementCharges = 0;
+                this.maxComplementCharges = 4;
+                
+                // State management helper fields
+                this.keys = {};
+                this.stageClearTimer = 0;
+                this.screenShake = 0;
+                this.pathogenDirection = 1;
+                this.pathogenDescendTriggered = false;
+                this.pathogenSpawnCount = 0;
+                this.bossSpawned = false;
+                this.bossWarningTimer = 0;
+                
+                // Leaderboard
+                this.leaderboard = JSON.parse(localStorage.getItem('immunity_leaderboard')) || [];
+                
+                // Audio initialization tracker
+                this.audioInitialized = false;
+
+                // Mouse click targets on screens
+                this.clickRegions = [];
+            }
+
+            init() {
+                // Key event listeners
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    this.handleKeyPress(e);
+                });
+                
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
+                
+                // Canvas click handling
+                this.canvas.addEventListener('click', (e) => {
+                    this.handleCanvasClick(e);
+                });
+
+                // Initial layout frame trigger
+                this.lastTime = performance.now();
+                this.gameLoop(this.lastTime);
+            }
+
+            handleKeyPress(e) {
+                // Ensure audio initialized on user interactions
+                if (!this.audioInitialized) {
+                    audio.init();
+                    this.audioInitialized = true;
+                }
+
+                if (this.state === 'PLAYING') {
+                    if (e.code === 'KeyP' || e.code === 'Keyp') {
+                        this.state = 'PAUSED';
+                        audio.hit();
+                    }
+                    if (e.code === 'KeyM' || e.code === 'Keym') {
+                        audio.muted = !audio.muted;
+                    }
+                    // Power-up activation hotkeys
+                    if (e.code === 'Digit1') {
+                        this.activateTripleShot();
+                    }
+                    if (e.code === 'Digit2') {
+                        this.activateRapidFire();
+                    }
+                    if (e.code === 'Digit3') {
+                        this.activateCytokineStorm();
+                    }
+                    if (e.code === 'Digit4') {
+                        this.activateComplementWave();
+                    }
+                } 
+                else if (this.state === 'PAUSED') {
+                    if (e.code === 'KeyP' || e.code === 'Keyp') {
+                        this.state = 'PLAYING';
+                        this.lastTime = performance.now();
+                        audio.hit();
+                    }
+                }
+            }
+
+            handleCanvasClick(e) {
+                if (!this.audioInitialized) {
+                    audio.init();
+                    this.audioInitialized = true;
+                }
+
+                // Calculate relative click coordinate matching native resolution
+                const rect = this.canvas.getBoundingClientRect();
+                const clickX = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
+                const clickY = ((e.clientY - rect.top) / rect.height) * CANVAS_HEIGHT;
+
+                // Process registered click regions for current screen
+                this.clickRegions.forEach(region => {
+                    if (clickX >= region.x && clickX <= region.x + region.w &&
+                        clickY >= region.y && clickY <= region.y + region.h) {
+                        region.callback();
+                    }
+                });
+            }
+
+            registerRegion(x, y, w, h, callback) {
+                this.clickRegions.push({ x, y, w, h, callback });
+            }
+
+            startNewGame() {
+                const config = LINEAGES[this.selectedLineageIndex];
+                this.player = new PlayerCell(config);
+                this.score = 0;
+                this.stage = 1;
+                this.kills = 0;
+                this.killsForComplement = 0;
+                
+                this.inventory = { T: 0, M: 0, C: 0 };
+                this.activeTimers = { tripleShot: 0, rapidFire: 0 };
+                this.complementCharges = 0;
+                
+                this.bullets = [];
+                this.pathogens = [];
+                this.boss = null;
+                this.powerUps = [];
+                this.waves = [];
+                this.particles = [];
+                
+                this.bossSpawned = false;
+                this.stageClearTimer = 0;
+                this.screenShake = 0;
+                
+                this.buildBarriers();
+                this.spawnPathogens();
+                
+                this.state = 'PLAYING';
+                this.lastTime = performance.now();
+                audio.levelUp();
+            }
+
+            buildBarriers() {
+                this.barriers = [];
+                // 4 barriers positioned horizontally above player
+                const spacing = 180;
+                const startX = 90;
+                const list = Array.from({ length: 4 });
+                list.forEach((_, i) => {
+                    const bx = startX + i * spacing;
+                    this.barriers.push(new Barrier(bx, 730));
+                });
+            }
+
+            spawnPathogens() {
+                this.pathogens = [];
+                this.bullets = [];
+                this.powerUps = [];
+                this.boss = null;
+                
+                const diffConfig = DIFF_CONFIGS[this.selectedDiff];
+                
+                // If stage is multiple of 5, we spawn the boss only
+                if (this.stage % 5 === 0) {
+                    this.boss = new MutagenBoss(diffConfig.hpMult);
+                    this.bossSpawned = true;
+                    this.bossWarningTimer = 2.0;
+                    audio.bossWarn();
+                    return;
+                }
+                
+                this.bossSpawned = false;
+
+                // 4 rows × 8 columns grid of pathogens starting at Y=110
+                const rows = 4;
+                const cols = 8;
+                const startX = 140;
+                const startY = 110;
+                const spacingX = 85;
+                const spacingY = 70;
+                
+                let currentId = 0;
+
+                const iterationsRows = Array.from({ length: rows });
+                const iterationsCols = Array.from({ length: cols });
+
+                iterationsRows.forEach((_, r) => {
+                    iterationsCols.forEach((_, c) => {
+                        const px = startX + c * spacingX;
+                        const py = startY + r * spacingY;
+                        
+                        // Row types distribution
+                        let type = 'virus';
+                        if (r <= 1) type = 'spike';
+                        else if (r === 2) type = 'bacterium';
+                        
+                        this.pathogens.push(new Pathogen(currentId++, type, px, py, diffConfig.hpMult));
+                    });
+                });
+
+                this.pathogenDirection = 1;
+                this.pathogenSpawnCount = this.pathogens.length;
+            }
+
+            nextStage() {
+                this.stage++;
+                this.bullets = [];
+                this.powerUps = [];
+                this.spawnPathogens();
+                this.state = 'PLAYING';
+                audio.levelUp();
+            }
+
+            activateTripleShot() {
+                if (this.inventory.T > 0 && this.activeTimers.tripleShot <= 0) {
+                    this.inventory.T--;
+                    this.activeTimers.tripleShot = 12.0;
+                    audio.powerup();
+                }
+            }
+
+            activateRapidFire() {
+                if (this.inventory.M > 0 && this.activeTimers.rapidFire <= 0) {
+                    this.inventory.M--;
+                    this.activeTimers.rapidFire = 12.0;
+                    audio.powerup();
+                }
+            }
+
+            activateCytokineStorm() {
+                if (this.inventory.C > 0) {
+                    this.inventory.C--;
+                    this.screenShake = 15;
+                    audio.lyse();
+
+                    // Apply cytokine damage to all enemies on screen
+                    if (this.boss) {
+                        this.boss.hp -= 15;
+                        this.spawnSplatterParticles(this.boss.x, this.boss.y, '#ff00ff', 15);
+                        if (this.boss.hp <= 0) {
+                            this.score += Math.ceil(500 * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                            this.boss = null;
+                            audio.lyse();
+                        }
+                    } else {
+                        // Safe filter modification to prevent iteration crashes during deletion
+                        this.pathogens.forEach(p => {
+                            p.hp -= 4;
+                            this.spawnSplatterParticles(p.x, p.y, p.color, 8);
+                        });
+                        
+                        // Filter out dead pathogens
+                        const deadCount = this.pathogens.filter(p => p.hp <= 0).length;
+                        if (deadCount > 0) {
+                            this.kills += deadCount;
+                            this.killsForComplement += deadCount;
+                            this.score += Math.ceil(40 * deadCount * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                            this.pathogens = this.pathogens.filter(p => p.hp > 0);
+                            
+                            this.checkComplementCharges();
+                        }
+                    }
+                }
+            }
+
+            activateComplementWave() {
+                if (this.complementCharges > 0) {
+                    this.complementCharges--;
+                    this.waves.push(new ComplementWave(this.player.x, this.player.y));
+                    audio.complement();
+                }
+            }
+
+            checkComplementCharges() {
+                if (this.killsForComplement >= 45) {
+                    const chargesEarned = Math.floor(this.killsForComplement / 45);
+                    this.complementCharges = Math.min(this.maxComplementCharges, this.complementCharges + chargesEarned);
+                    this.killsForComplement = this.killsForComplement % 45;
+                }
+            }
+
+            spawnSplatterParticles(x, y, color, count = 6) {
+                const arr = Array.from({ length: count });
+                arr.forEach(() => {
+                    this.particles.push(new Particle(x, y, color));
+                });
+            }
+
+            saveLeaderboard() {
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    localStorage.setItem('immunity_highscore', this.highScore);
+                }
+
+                const entry = {
+                    name: 'LINEAGE ' + this.player.lineage.id.substring(0,3),
+                    score: this.score,
+                    stage: this.stage,
+                    lineage: this.player.lineage.name
+                };
+                this.leaderboard.push(entry);
+                // Sort descending
+                this.leaderboard.sort((a, b) => b.score - a.score);
+                // Cut top 5
+                this.leaderboard = this.leaderboard.slice(0, 5);
+                localStorage.setItem('immunity_leaderboard', JSON.stringify(this.leaderboard));
+            }
+
+            // --- GAME LOOP PROCESS ---
+            gameLoop(timestamp) {
+                const dt = Math.min(0.1, (timestamp - this.lastTime) / 1000.0);
+                this.lastTime = timestamp;
+
+                this.ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                // Apply screen shake transform if active
+                if (this.screenShake > 0) {
+                    const dx = (Math.random() - 0.5) * this.screenShake;
+                    const dy = (Math.random() - 0.5) * this.screenShake;
+                    this.ctx.translate(dx, dy);
+                    this.screenShake -= dt * 40;
+                }
+
+                switch(this.state) {
+                    case 'MENU':
+                        this.drawMenu();
+                        break;
+                    case 'LINEAGE_SELECT':
+                        this.drawLineageSelector();
+                        break;
+                    case 'PLAYING':
+                        this.updatePlaying(dt);
+                        this.drawPlaying();
+                        break;
+                    case 'PAUSED':
+                        this.drawPlaying();
+                        this.drawPauseOverlay();
+                        break;
+                    case 'STAGE_CLEAR':
+                        this.updateStageClear(dt);
+                        this.drawPlaying();
+                        this.drawStageClearOverlay();
+                        break;
+                    case 'GAME_OVER':
+                        this.drawGameOver();
+                        break;
+                }
+
+                // Reset screen shake transform
+                if (this.screenShake > 0) {
+                    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                }
+
+                requestAnimationFrame((t) => this.gameLoop(t));
+            }
+
+            // --- UPDATES ---
+            updatePlaying(dt) {
+                const diffConfig = DIFF_CONFIGS[this.selectedDiff];
+                
+                // Update player
+                this.player.update(dt, this.keys, this.activeTimers.tripleShot > 0, this.activeTimers.rapidFire > 0);
+
+                // Update power-up durations
+                if (this.activeTimers.tripleShot > 0) this.activeTimers.tripleShot -= dt;
+                if (this.activeTimers.rapidFire > 0) this.activeTimers.rapidFire -= dt;
+
+                // Player firing trigger
+                if (this.keys['Space'] || this.keys['KeyF']) {
+                    const cd = this.player.lineage.fireCooldown * (this.activeTimers.rapidFire > 0 ? 0.55 : 1.0);
+                    if (this.player.fireTimer <= 0) {
+                        this.playerShoot();
+                        this.player.fireTimer = cd;
+                    }
+                }
+
+                // Update active player bullets
+                this.bullets.forEach(bullet => bullet.update(dt));
+                this.bullets = this.bullets.filter(b => b.y > -20 && b.y < CANVAS_HEIGHT + 20);
+
+                // Update waves
+                this.waves.forEach(wave => wave.update(dt));
+                this.waves = this.waves.filter(w => !w.isFinished());
+
+                // Update particles
+                this.particles.forEach(p => p.update(dt));
+                this.particles = this.particles.filter(p => p.life > 0);
+
+                // Update falling power-ups
+                this.powerUps.forEach(pu => pu.update(dt));
+                this.powerUps = this.powerUps.filter(pu => pu.y < CANVAS_HEIGHT + 20);
+
+                // Update Boss if spawned
+                if (this.boss) {
+                    if (this.bossWarningTimer > 0) {
+                        this.bossWarningTimer -= dt;
+                    } else {
+                        const previousBossState = this.boss.state;
+                        this.boss.update(dt, this.player.x, diffConfig.speedMult);
+                        
+                        // Shoot triggers or state-based action events
+                        if (this.boss.state === 'RADIAL_BURST' && previousBossState !== 'RADIAL_BURST') {
+                            this.bossRadialBurst();
+                        }
+                        
+                        // Boss basic periodic firing (triple shot during PATROL)
+                        if (this.boss.state === 'PATROL') {
+                            if (Math.random() < 0.02 * diffConfig.fireMult) {
+                                this.bossPeriodicShoot();
+                            }
+                        }
+                    }
+                } else {
+                    // Update Pathogen Grid Movement
+                    this.updatePathogenGrid(dt, diffConfig.speedMult);
+                    this.pathogenFiring(dt, diffConfig.fireMult);
+                }
+
+                // Process collisions
+                this.checkCollisions(dt);
+
+                // Process stage clean completion checks
+                this.checkStageCompletion();
+            }
+
+            updateStageClear(dt) {
+                this.stageClearTimer -= dt;
+                
+                // Keep processing animations (bullets, waves, particles) but no pathogen/player movements
+                this.bullets.forEach(bullet => bullet.update(dt));
+                this.waves.forEach(wave => wave.update(dt));
+                this.particles.forEach(p => p.update(dt));
+                
+                if (this.stageClearTimer <= 0) {
+                    this.nextStage();
+                }
+            }
+
+            playerShoot() {
+                audio.shoot();
+                const bulletColor = this.player.lineage.color;
+                const bType = this.player.lineage.bulletType;
+                
+                // Pierce parameters
+                let pierceMax = 1;
+                if (this.player.lineage.id === 'NATURAL_KILLER') pierceMax = 3;
+
+                if (this.activeTimers.tripleShot > 0) {
+                    // Three bullet spread
+                    this.bullets.push(new Bullet(this.player.x, this.player.y - 20, -100, -680, false, bType, bulletColor, pierceMax));
+                    this.bullets.push(new Bullet(this.player.x, this.player.y - 20, 0, -700, false, bType, bulletColor, pierceMax));
+                    this.bullets.push(new Bullet(this.player.x, this.player.y - 20, 100, -680, false, bType, bulletColor, pierceMax));
+                } else {
+                    // Standard straight bullet
+                    this.bullets.push(new Bullet(this.player.x, this.player.y - 20, 0, -700, false, bType, bulletColor, pierceMax));
+                }
+            }
+
+            bossRadialBurst() {
+                audio.lyse();
+                const numBullets = 16;
+                const step = (Math.PI * 2) / numBullets;
+                const iterations = Array.from({ length: numBullets });
+                iterations.forEach((_, i) => {
+                    const angle = i * step;
+                    const vx = Math.cos(angle) * 320;
+                    const vy = Math.sin(angle) * 320;
+                    this.bullets.push(new Bullet(this.boss.x, this.boss.y + 10, vx, vy, true, 'standard', '#ff00ff'));
+                });
+            }
+
+            bossPeriodicShoot() {
+                audio.bossSweep();
+                // Fire triple vertical downwards spread
+                this.bullets.push(new Bullet(this.boss.x, this.boss.y + 40, -80, 320, true, 'standard', '#ff00ff'));
+                this.bullets.push(new Bullet(this.boss.x, this.boss.y + 40, 0, 340, true, 'standard', '#ff00ff'));
+                this.bullets.push(new Bullet(this.boss.x, this.boss.y + 40, 80, 320, true, 'standard', '#ff00ff'));
+            }
+
+            updatePathogenGrid(dt, speedMult) {
+                if (this.pathogens.length === 0) return;
+
+                // Determine base horizontal speed scaled by pathogen count reduction
+                const remainingRatio = this.pathogens.length / this.pathogenSpawnCount;
+                const gridSpeed = (65 + (1 - remainingRatio) * 110) * speedMult * this.pathogenDirection;
+                
+                let hitBound = false;
+                
+                // Move standard pathogens
+                this.pathogens.forEach(p => {
+                    p.update(dt, gridSpeed * dt, 0);
+                    // Check horizontal screen boundary hits
+                    if (p.x >= CANVAS_WIDTH - p.size - 25 && this.pathogenDirection > 0) hitBound = true;
+                    if (p.x <= p.size + 25 && this.pathogenDirection < 0) hitBound = true;
+                });
+
+                if (hitBound) {
+                    this.pathogenDirection *= -1;
+                    // Descend all pathogens on boundary hit
+                    this.pathogens.forEach(p => {
+                        p.y += 16;
+                    });
+                }
+            }
+
+            pathogenFiring(dt, fireMult) {
+                if (this.pathogens.length === 0) return;
+
+                // Frontline firing logic: Group pathogens by column coordinate (using integer index bins)
+                const columnMap = {};
+                this.pathogens.forEach(p => {
+                    // bin X coords loosely to identify columns
+                    const colIndex = Math.floor(p.x / 40);
+                    if (!columnMap[colIndex] || columnMap[colIndex].y < p.y) {
+                        columnMap[colIndex] = p; // lowest pathogen is frontline
+                    }
+                });
+
+                // Convert map values to array list
+                const frontlines = Object.values(columnMap);
+                
+                // Base probability rate of firing
+                frontlines.forEach(p => {
+                    if (Math.random() < 0.0035 * fireMult) {
+                        this.pathogenShoot(p);
+                    }
+                });
+            }
+
+            pathogenShoot(p) {
+                if (p.type === 'virus') {
+                    // Red single standard bullet
+                    this.bullets.push(new Bullet(p.x, p.y + p.size, 0, 240, true, 'standard', '#ff3333'));
+                } else if (p.type === 'bacterium') {
+                    // Green faster bullet
+                    this.bullets.push(new Bullet(p.x, p.y + p.size, 0, 320, true, 'standard', '#39ff14'));
+                } else if (p.type === 'spike') {
+                    // Amber dual spread bullets
+                    audio.shoot();
+                    this.bullets.push(new Bullet(p.x, p.y + p.size, -50, 250, true, 'standard', '#ffaa00'));
+                    this.bullets.push(new Bullet(p.x, p.y + p.size, 50, 250, true, 'standard', '#ffaa00'));
+                }
+            }
+            checkCollisions(dt) {
+                // Helper to find minimum distance from point C to line segment A-B
+                const distToSegment = (cx, cy, ax, ay, bx, by) => {
+                    const dx = bx - ax;
+                    const dy = by - ay;
+                    const l2 = dx * dx + dy * dy;
+                    if (l2 === 0) {
+                        const dax = cx - ax;
+                        const day = cy - ay;
+                        return Math.sqrt(dax * dax + day * day);
+                    }
+                    let t = ((cx - ax) * dx + (cy - ay) * dy) / l2;
+                    t = Math.max(0, Math.min(1, t));
+                    const projX = ax + t * dx;
+                    const projY = ay + t * dy;
+                    const dpx = cx - projX;
+                    const dpy = cy - projY;
+                    return Math.sqrt(dpx * dpx + dpy * dpy);
+                };
+
+                // 1. Player Bullets vs Pathogens
+                this.bullets.forEach(b => {
+                    if (b.isEnemy) return;
+
+                    const prevX = b.x - b.vx * dt;
+                    const prevY = b.y - b.vy * dt;
+
+                    this.pathogens.forEach(p => {
+                        if (b.damagedIds.includes(p.id) || p.hp <= 0) return;
+
+                        const dist = distToSegment(p.x, p.y, prevX, prevY, b.x, b.y);
+                        if (dist < b.size + p.size) {
+                            p.hp--;
+                            b.damagedIds.push(p.id);
+                            b.pierceCount++;
+                            audio.hit();
+                            this.spawnSplatterParticles(p.x, p.y, p.color, 4);
+
+                            if (p.hp <= 0) {
+                                // Pathogen destroyed
+                                this.kills++;
+                                this.killsForComplement++;
+                                this.score += Math.ceil((p.type === 'virus' ? 50 : (p.type === 'bacterium' ? 100 : 180)) * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                audio.lyse();
+                                this.spawnSplatterParticles(p.x, p.y, p.color, 10);
+                                this.checkPowerUpDrop(p.x, p.y);
+                                this.checkComplementCharges();
+                            }
+
+                            if (b.pierceCount >= b.pierceMax) {
+                                b.y = -9999; // destroy bullet
+                            }
+                        }
+                    });
+
+                    // Player Bullets vs Boss
+                    if (this.boss && !b.isEnemy) {
+                        const dist = distToSegment(this.boss.x, this.boss.y, prevX, prevY, b.x, b.y);
+                        if (dist < b.size + this.boss.size && !b.damagedIds.includes('boss')) {
+                            this.boss.hp--;
+                            b.damagedIds.push('boss');
+                            b.pierceCount++;
+                            audio.hit();
+                            this.spawnSplatterParticles(this.boss.x, this.boss.y, '#ff00ff', 5);
+
+                            if (this.boss.hp <= 0) {
+                                this.score += Math.ceil(1000 * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                this.boss = null;
+                                audio.lyse();
+                            }
+
+                            if (b.pierceCount >= b.pierceMax) {
+                                b.y = -9999;
+                            }
+                        }
+                    }
+                });
+
+                // Clear dead pathogens
+                this.pathogens = this.pathogens.filter(p => p.hp > 0);
+
+                // 2. Complement waves vs Pathogens/Boss
+                this.waves.forEach(w => {
+                    this.pathogens.forEach(p => {
+                        if (w.pathogensHit.includes(p.id)) return;
+                        
+                        const dx = p.x - w.x;
+                        const dy = p.y - w.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (dist <= w.radius && dist >= Math.max(0, w.radius - 60)) {
+                            p.hp -= 10;
+                            w.pathogensHit.push(p.id);
+                            audio.hit();
+                            this.spawnSplatterParticles(p.x, p.y, p.color, 8);
+
+                            if (p.hp <= 0) {
+                                this.kills++;
+                                this.killsForComplement++;
+                                this.score += Math.ceil(100 * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                this.spawnSplatterParticles(p.x, p.y, p.color, 12);
+                                this.checkComplementCharges();
+                            }
+                        }
+                    });
+
+                    if (this.boss && !w.bossHit) {
+                        const dx = this.boss.x - w.x;
+                        const dy = this.boss.y - w.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist <= w.radius && dist >= Math.max(0, w.radius - 60)) {
+                            this.boss.hp -= 15;
+                            w.bossHit = true;
+                            audio.hit();
+                            this.spawnSplatterParticles(this.boss.x, this.boss.y, '#ff00ff', 12);
+
+                            if (this.boss.hp <= 0) {
+                                this.score += Math.ceil(1000 * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                this.boss = null;
+                                audio.lyse();
+                            }
+                        }
+                    }
+                });
+
+                // Clear dead pathogens after wave hit
+                this.pathogens = this.pathogens.filter(p => p.hp > 0);
+
+                // 3. Enemy/Player Bullets vs Barriers
+                this.bullets.forEach(b => {
+                    if (b.y === 9999 || b.y === -9999) return;
+
+                    const prevX = b.x - b.vx * dt;
+                    const prevY = b.y - b.vy * dt;
+
+                    this.barriers.forEach(barrier => {
+                        // Group active blocks of this barrier by column index
+                        const activeByCol = {};
+                        barrier.blocks.forEach(block => {
+                            if (block.hp > 0) {
+                                if (!activeByCol[block.col]) {
+                                    activeByCol[block.col] = [];
+                                }
+                                activeByCol[block.col].push(block);
+                            }
+                        });
+
+                        // For each column, find the target block (closest to shooter)
+                        const targetBlocks = [];
+                        Object.keys(activeByCol).forEach(col => {
+                            const blocks = activeByCol[col];
+                            if (blocks.length > 0) {
+                                if (b.isEnemy) {
+                                    // Pathogen bullet (downwards): targets the top-most block (lowest row index)
+                                    let target = blocks[0];
+                                    blocks.forEach(bk => {
+                                        if (bk.row < target.row) target = bk;
+                                    });
+                                    targetBlocks.push(target);
+                                } else {
+                                    // Player bullet (upwards): targets the bottom-most block (highest row index)
+                                    let target = blocks[0];
+                                    blocks.forEach(bk => {
+                                        if (bk.row > target.row) target = bk;
+                                    });
+                                    targetBlocks.push(target);
+                                }
+                            }
+                        });
+
+                        // Check collisions only against target blocks using swept-volume segment check
+                        targetBlocks.forEach(block => {
+                            if (b.y === 9999 || b.y === -9999) return;
+
+                            const cx = block.x + block.size / 2;
+                            const cy = block.y + block.size / 2;
+                            const dist = distToSegment(cx, cy, prevX, prevY, b.x, b.y);
+                            const collRadius = b.size + block.size / 2;
+
+                            if (dist < collRadius) {
+                                block.hp--;
+                                b.y = b.isEnemy ? 9999 : -9999; // destroy bullet
+                            }
+                        });
+                    });
+                });
+
+                // 4. Enemy Bullets vs Player
+                this.bullets.forEach(b => {
+                    if (!b.isEnemy) return;
+
+                    const prevX = b.x - b.vx * dt;
+                    const prevY = b.y - b.vy * dt;
+
+                    const dist = distToSegment(this.player.x, this.player.y, prevX, prevY, b.x, b.y);
+                    if (dist < b.size + this.player.size) {
+                        b.y = 9999; // destroy bullet
+                        this.damagePlayer();
+                    }
+                });
+
+                // 5. Enemy body contact vs Player/Barriers
+                this.pathogens.forEach(p => {
+                    // Check barriers contact
+                    this.barriers.forEach(barrier => {
+                        barrier.blocks.forEach(block => {
+                            if (block.hp <= 0) return;
+                            const dx = p.x - (block.x + block.size/2);
+                            const dy = p.y - (block.y + block.size/2);
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist < p.size + block.size/2) {
+                                block.hp = 0; // destroy block instantly
+                            }
+                        });
+                    });
+
+                    // Check player contact
+                    const dx = p.x - this.player.x;
+                    const dy = p.y - this.player.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < p.size + this.player.size) {
+                        this.damagePlayer();
+                        p.hp = 0; // Destroy pathogen on impact
+                        audio.lyse();
+                    }
+                });
+
+                // Boss contact vs Player
+                if (this.boss) {
+                    const dx = this.boss.x - this.player.x;
+                    const dy = this.boss.y - this.player.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < this.boss.size + this.player.size) {
+                        this.damagePlayer();
+                    }
+                }
+
+                // 6. Player contact with Power-ups
+                this.powerUps.forEach(pu => {
+                    const dx = pu.x - this.player.x;
+                    const dy = pu.y - this.player.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < pu.size + this.player.size) {
+                        pu.y = 9999; // destroy powerup
+                        this.collectPowerUp(pu);
+                    }
+                });
+            }
+
+            damagePlayer() {
+                if (this.player.invincibilityTimer > 0) return;
+
+                this.player.lives--;
+                this.player.invincibilityTimer = 2.0; // 2 seconds invincibility
+                this.screenShake = 12;
+                audio.playerHit();
+
+                if (this.player.lives <= 0) {
+                    this.state = 'GAME_OVER';
+                    audio.gameOver();
+                    this.saveLeaderboard();
+                }
+            }
+
+            collectPowerUp(pu) {
+                audio.powerup();
+                if (pu.type === 'P') {
+                    // Plasma cell (+1 life, auto-applied)
+                    if (this.player.lives < this.player.maxLives) {
+                        this.player.lives++;
+                    }
+                    this.spawnSplatterParticles(this.player.x, this.player.y, '#39ff14', 15);
+                } else {
+                    // Add to inventories
+                    this.inventory[pu.type]++;
+                }
+            }
+
+            checkPowerUpDrop(x, y) {
+                if (Math.random() < 0.05) {
+                    const rand = Math.random();
+                    let type = 'P'; // Default Plasma
+                    if (rand < 0.25) type = 'T';
+                    else if (rand < 0.50) type = 'M';
+                    else if (rand < 0.75) type = 'C';
+                    
+                    this.powerUps.push(new PowerUp(x, y, type));
+                }
+            }
+
+            checkStageCompletion() {
+                // Check breach conditions: pathogens reach defensive Y level 810
+                const breached = this.pathogens.some(p => p.y >= 810);
+                if (breached) {
+                    this.state = 'GAME_OVER';
+                    audio.gameOver();
+                    this.saveLeaderboard();
+                    return;
+                }
+
+                // Stage clear condition
+                if (this.pathogens.length === 0 && !this.boss && this.state === 'PLAYING') {
+                    this.state = 'STAGE_CLEAR';
+                    this.stageClearTimer = 2.0; // 2s clear transition delay
+                }
+            }
+
+            // --- DRAWINGS ---
+            drawPlaying() {
+                // 1. Draw organic microscopic background grid cells
+                this.ctx.fillStyle = '#020207';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                this.drawGridGrid();
+
+                // 2. Draw organic barriers
+                this.barriers.forEach(b => b.draw(this.ctx));
+
+                // 3. Draw pathogens
+                this.pathogens.forEach(p => p.draw(this.ctx));
+
+                // 4. Draw boss if exists
+                if (this.boss) {
+                    this.boss.draw(this.ctx);
+                    if (this.bossWarningTimer > 0) {
+                        this.drawBossWarning();
+                    }
+                    this.drawBossHpBar();
+                }
+
+                // 5. Draw powerups
+                this.powerUps.forEach(pu => pu.draw(this.ctx));
+
+                // 6. Draw player
+                this.player.draw(this.ctx);
+
+                // 7. Draw bullets
+                this.bullets.forEach(b => b.draw(this.ctx));
+
+                // 8. Draw waves
+                this.waves.forEach(w => w.draw(this.ctx));
+
+                // 9. Draw particles
+                this.particles.forEach(p => p.draw(this.ctx));
+
+                // 10. Draw UI panels
+                this.drawHUD();
+                this.drawBottomControlPanel();
+            }
+
+            drawGridGrid() {
+                this.ctx.strokeStyle = 'rgba(0, 243, 255, 0.03)';
+                this.ctx.lineWidth = 1;
+                const gridSpacing = 60;
+                
+                // Draw vertical grid
+                const iterationsX = Array.from({ length: Math.ceil(CANVAS_WIDTH / gridSpacing) });
+                iterationsX.forEach((_, i) => {
+                    const x = i * gridSpacing;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, CANVAS_HEIGHT);
+                    this.ctx.stroke();
+                });
+
+                // Draw horizontal grid
+                const iterationsY = Array.from({ length: Math.ceil(CANVAS_HEIGHT / gridSpacing) });
+                iterationsY.forEach((_, j) => {
+                    const y = j * gridSpacing;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(CANVAS_WIDTH, y);
+                    this.ctx.stroke();
+                });
+            }
+
+            drawHUD() {
+                // Top Glassmorphic bar back
+                this.ctx.fillStyle = 'rgba(10, 10, 25, 0.82)';
+                this.ctx.strokeStyle = 'rgba(0, 243, 255, 0.2)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.roundRect(15, 15, CANVAS_WIDTH - 30, 75, 8);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Logo text
+                this.ctx.textAlign = 'left';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '900 21px Orbitron';
+                this.ctx.fillText('IMMUNITY PROTOCOL', 30, 48);
+
+                // Difficulty Badge
+                const dColor = DIFF_CONFIGS[this.selectedDiff].color;
+                this.ctx.fillStyle = dColor;
+                this.ctx.font = '800 10px Orbitron';
+                this.ctx.beginPath();
+                this.ctx.roundRect(30, 56, 75, 18, 4);
+                this.ctx.fill();
+                
+                this.ctx.fillStyle = '#000000';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(this.selectedDiff, 67, 69);
+
+                // Score / Stage
+                this.ctx.textAlign = 'left';
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '600 11px Outfit';
+                this.ctx.fillText('SCORE', 260, 42);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '800 18px Orbitron';
+                this.ctx.fillText(this.score, 260, 68);
+
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '600 11px Outfit';
+                this.ctx.fillText('STAGE', 380, 42);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '800 18px Orbitron';
+                this.ctx.fillText(this.stage, 380, 68);
+
+                // Lineage Info
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '600 11px Outfit';
+                this.ctx.fillText('LINEAGE', 470, 42);
+                this.ctx.fillStyle = this.player.lineage.color;
+                this.ctx.font = '700 13px Orbitron';
+                this.ctx.fillText(this.player.lineage.id, 470, 65);
+
+                // Life Count (Draw mini cells representing lives)
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '600 11px Outfit';
+                this.ctx.fillText('INTEGRITY (LIVES)', 610, 42);
+                
+                const maxLivesCount = this.player.maxLives;
+                const activeLives = this.player.lives;
+                const livesIter = Array.from({ length: maxLivesCount });
+                livesIter.forEach((_, idx) => {
+                    const lx = 615 + idx * 16;
+                    const ly = 62;
+                    this.ctx.beginPath();
+                    this.ctx.arc(lx, ly, 6, 0, Math.PI * 2);
+                    if (idx < activeLives) {
+                        this.ctx.fillStyle = this.player.lineage.color;
+                        this.ctx.shadowBlur = 4;
+                        this.ctx.shadowColor = this.player.lineage.color;
+                        this.ctx.fill();
+                        this.ctx.shadowBlur = 0;
+                    } else {
+                        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                        this.ctx.lineWidth = 1.5;
+                        this.ctx.stroke();
+                    }
+                });
+
+                // Complement Charges
+                this.ctx.fillStyle = '#ffd700';
+                this.ctx.font = '700 11px Orbitron';
+                this.ctx.fillText('COMPLEMENT [4]', 750, 42);
+                const compIter = Array.from({ length: this.maxComplementCharges });
+                compIter.forEach((_, idx) => {
+                    const cx = 750 + idx * 18;
+                    const cy = 52;
+                    this.ctx.save();
+                    if (idx < this.complementCharges) {
+                        this.ctx.fillStyle = '#ffd700';
+                        this.ctx.shadowBlur = 8;
+                        this.ctx.shadowColor = '#ffd700';
+                        this.ctx.fillRect(cx, cy, 12, 12);
+                    } else {
+                        this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.2)';
+                        this.ctx.lineWidth = 1.5;
+                        this.ctx.strokeRect(cx, cy, 12, 12);
+                    }
+                    this.ctx.restore();
+                });
+            }
+
+            drawBottomControlPanel() {
+                // Bottom control panel
+                const panelY = 920;
+                this.ctx.fillStyle = 'rgba(10, 10, 25, 0.82)';
+                this.ctx.strokeStyle = 'rgba(0, 243, 255, 0.2)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.roundRect(15, panelY, CANVAS_WIDTH - 30, 65, 8);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Sound state [M] & Pause state [P]
+                this.ctx.textAlign = 'left';
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '600 12px Outfit';
+                this.ctx.fillText('AUDIO [M]: ' + (audio.muted ? 'MUTED' : 'ON'), 35, panelY + 28);
+                this.ctx.fillText('PAUSE [P]', 35, panelY + 46);
+
+                // Draw inventory legend & hotkeys
+                const legends = [
+                    { type: 'T', key: '1', name: 'TRIPLE SHOT [1]', count: this.inventory.T, color: '#ffd700', active: this.activeTimers.tripleShot > 0, timer: this.activeTimers.tripleShot },
+                    { type: 'M', key: '2', name: 'RAPID FIRE [2]', count: this.inventory.M, color: '#00f3ff', active: this.activeTimers.rapidFire > 0, timer: this.activeTimers.rapidFire },
+                    { type: 'C', key: '3', name: 'STORM [3]', count: this.inventory.C, color: '#ff00ff' },
+                    { type: 'P', key: '', name: 'LIFE [+1]', count: 'AUTO', color: '#39ff14' }
+                ];
+
+                const legXStart = 200;
+                const legSpacing = 155;
+
+                legends.forEach((leg, idx) => {
+                    const lx = legXStart + idx * legSpacing;
+                    const ly = panelY + 32;
+
+                    // Draw colored small hexagon
+                    this.ctx.save();
+                    this.ctx.strokeStyle = leg.color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.fillStyle = 'rgba(5, 5, 20, 0.85)';
+                    this.ctx.beginPath();
+                    Array.from({ length: 6 }).forEach((_, i) => {
+                        const angle = (i / 6) * Math.PI * 2;
+                        this.ctx.lineTo(lx + Math.cos(angle) * 11, ly + Math.sin(angle) * 11);
+                    });
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.stroke();
+
+                    // Letter symbol
+                    this.ctx.fillStyle = leg.color;
+                    this.ctx.font = '800 9px Outfit';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    const sym = leg.type === 'P' ? '+1' : leg.type;
+                    this.ctx.fillText(sym, lx, ly);
+                    this.ctx.restore();
+
+                    // Text labels & counts
+                    this.ctx.textAlign = 'left';
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = '700 11px Orbitron';
+                    this.ctx.fillText(leg.name, lx + 18, ly - 3);
+
+                    this.ctx.fillStyle = '#8b9bb4';
+                    this.ctx.font = '600 10px Outfit';
+                    const cText = leg.type === 'P' ? 'AUTO' : `Qty: ${leg.count}`;
+                    this.ctx.fillText(cText, lx + 18, ly + 9);
+
+                    // If active, draw countdown text
+                    if (leg.active && leg.timer > 0) {
+                        this.ctx.fillStyle = leg.color;
+                        this.ctx.font = '800 10px Orbitron';
+                        this.ctx.fillText(leg.timer.toFixed(1) + 's', lx + 90, ly + 3);
+                    }
+                });
+
+                // Gold Complement panel label
+                this.ctx.fillStyle = '#ffd700';
+                this.ctx.font = '700 10px Orbitron';
+                this.ctx.textAlign = 'right';
+                this.ctx.fillText(`Complement: ${this.complementCharges}/4 [4]`, CANVAS_WIDTH - 35, panelY + 36);
+                this.ctx.textAlign = 'left';
+            }
+
+            drawBossWarning() {
+                this.ctx.save();
+                this.ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#ff3333';
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = '#ff3333';
+                this.ctx.font = '900 48px Orbitron';
+                this.ctx.fillText('PATHOGENIC MUTATION DETECTED', CANVAS_WIDTH / 2, 440);
+                this.ctx.font = '600 20px Outfit';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillText('MUTAGEN CELL SPAWNING', CANVAS_WIDTH / 2, 490);
+                this.ctx.restore();
+            }
+
+            drawBossHpBar() {
+                if (!this.boss) return;
+                const barWidth = 600;
+                const barHeight = 14;
+                const bx = (CANVAS_WIDTH - barWidth) / 2;
+                const by = 110;
+
+                this.ctx.save();
+                
+                // Draw HP bar frame
+                this.ctx.fillStyle = 'rgba(10, 10, 25, 0.8)';
+                this.ctx.strokeStyle = 'rgba(255, 0, 255, 0.4)';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.roundRect(bx, by, barWidth, barHeight, 4);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Draw segmented fill in thirds
+                const fillRatio = Math.max(0, this.boss.hp / this.boss.maxHp);
+                const thirdRatio = 1 / 3;
+                
+                const fills = Array.from({ length: 3 });
+                fills.forEach((_, i) => {
+                    const startRatio = i * thirdRatio;
+                    if (fillRatio > startRatio) {
+                        const currentSegmentFill = Math.min(thirdRatio, fillRatio - startRatio);
+                        const segmentW = currentSegmentFill * barWidth;
+                        const segmentX = bx + startRatio * barWidth;
+                        
+                        this.ctx.fillStyle = '#ff00ff';
+                        if (fillRatio < 0.34) this.ctx.fillStyle = '#ff3333'; // Low HP warning color
+                        
+                        this.ctx.beginPath();
+                        this.ctx.rect(segmentX + 1, by + 1.5, segmentW - 2, barHeight - 3);
+                        this.ctx.fill();
+                    }
+                });
+
+                // Label
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '800 10px Orbitron';
+                this.ctx.fillText(`MUTAGEN CELL HOSTILE HP: ${this.boss.hp} / ${this.boss.maxHp}`, CANVAS_WIDTH / 2, by - 8);
+
+                this.ctx.restore();
+            }
+
+            // --- MENU SCREENS & OVERLAYS ---
+            drawMenu() {
+                this.clickRegions = [];
+
+                // Microscopic grid background
+                this.ctx.fillStyle = '#020207';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                this.drawGridGrid();
+
+                // Title Banner
+                this.ctx.textAlign = 'center';
+                this.ctx.shadowBlur = 25;
+                this.ctx.shadowColor = '#00f3ff';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '900 64px Orbitron';
+                this.ctx.fillText('IMMUNITY', CANVAS_WIDTH / 2, 280);
+                
+                this.ctx.shadowColor = '#ff00ff';
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.fillText('PROTOCOL', CANVAS_WIDTH / 2, 360);
+                
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '600 18px Outfit';
+                this.ctx.fillText('Tactical Pathogen Neutralization and Host Defense', CANVAS_WIDTH / 2, 410);
+
+                // Play / Selection options
+                const startBtnX = (CANVAS_WIDTH - 280) / 2;
+                const startBtnY = 560;
+                
+                this.drawNeonButton(startBtnX, startBtnY, 280, 55, 'START SYSTEM', '#00f3ff', () => {
+                    this.state = 'LINEAGE_SELECT';
+                    audio.hit();
+                });
+
+                // Draw Leaderboard
+                this.drawLeaderboardOverlay(CANVAS_WIDTH / 2, 700);
+            }
+             drawLineageSelector() {
+                this.clickRegions = [];
+                
+                this.ctx.fillStyle = '#020207';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                this.drawGridGrid();
+
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '900 32px Orbitron';
+                this.ctx.fillText('SELECT PLAYABLE CELL LINEAGE', CANVAS_WIDTH / 2, 100);
+
+                // Draw current high score
+                this.ctx.font = '700 13px Orbitron';
+                this.ctx.fillStyle = '#ffd700';
+                this.ctx.fillText(`CURRENT HIGH SCORE: ${this.highScore.toLocaleString()} PTS`, CANVAS_WIDTH / 2, 135);
+
+                // Draw Difficulty choice
+                this.ctx.font = '800 13px Orbitron';
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.fillText('DIFFICULTY SYSTEM:', CANVAS_WIDTH / 2, 160);
+
+                const diffs = ['EASY', 'NORMAL', 'HARD'];
+                const dWidth = 110;
+                const dHeight = 35;
+                const dSpacing = 135;
+                const dStartX = (CANVAS_WIDTH - (3 * dWidth + 2 * 25)) / 2;
+
+                diffs.forEach((diff, idx) => {
+                    const dx = dStartX + idx * dSpacing;
+                    const dy = 180;
+                    const isSelected = this.selectedDiff === diff;
+                    const config = DIFF_CONFIGS[diff];
+
+                    this.ctx.save();
+                    this.ctx.fillStyle = isSelected ? config.color : 'rgba(10, 10, 25, 0.8)';
+                    this.ctx.strokeStyle = config.color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(dx, dy, dWidth, dHeight, 6);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillStyle = isSelected ? '#000000' : '#ffffff';
+                    this.ctx.font = '800 12px Orbitron';
+                    this.ctx.fillText(diff, dx + dWidth / 2, dy + dHeight / 2);
+                    this.ctx.restore();
+
+                    this.registerRegion(dx, dy, dWidth, dHeight, () => {
+                        this.selectedDiff = diff;
+                        audio.hit();
+                    });
+                });
+
+                // Lineage cards list layout
+                const cardWidth = 240;
+                const cardHeight = 360;
+                const cardSpacing = 270;
+                const startX = (CANVAS_WIDTH - (3 * cardWidth + 2 * 30)) / 2;
+                const cardY = 280;
+
+                const unlockThresholds = {
+                    'MACROPHAGE': 0,
+                    'NATURAL_KILLER': 5000,
+                    'NEUTROPHIL': 15000
+                };
+
+                LINEAGES.forEach((lin, idx) => {
+                    const cx = startX + idx * cardSpacing;
+                    const cy = cardY;
+                    const isSelected = this.selectedLineageIndex === idx;
+                    const isLocked = this.highScore < (unlockThresholds[lin.id] || 0);
+
+                    this.ctx.save();
+                    this.ctx.fillStyle = 'rgba(10, 10, 30, 0.85)';
+                    this.ctx.strokeStyle = isSelected ? lin.color : 'rgba(255, 255, 255, 0.1)';
+                    this.ctx.lineWidth = isSelected ? 3 : 1.5;
+                    
+                    if (isSelected) {
+                        this.ctx.shadowBlur = 15;
+                        this.ctx.shadowColor = lin.color;
+                    }
+                    
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(cx, cy, cardWidth, cardHeight, 10);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                    this.ctx.shadowBlur = 0;
+
+                    // If locked, fade the cell drawing
+                    if (isLocked) {
+                        this.ctx.globalAlpha = 0.35;
+                    }
+
+                    // Draw Nucleus visualization
+                    const mockPulse = performance.now() / 250;
+                    lin.drawNucleus(this.ctx, cx + cardWidth/2, cy + 90, 48, mockPulse);
+
+                    // Outer shell
+                    this.ctx.strokeStyle = lin.color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.beginPath();
+                    this.ctx.arc(cx + cardWidth/2, cy + 90, 48, 0, Math.PI * 2);
+                    this.ctx.stroke();
+
+                    // Lineage Name
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillStyle = lin.color;
+                    this.ctx.font = '900 16px Orbitron';
+                    this.ctx.fillText(lin.name, cx + cardWidth / 2, cy + 180);
+
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = '600 11px Outfit';
+                    this.ctx.fillText(lin.subname, cx + cardWidth / 2, cy + 200);
+
+                    // Stats lines
+                    this.ctx.textAlign = 'left';
+                    this.ctx.fillStyle = '#8b9bb4';
+                    this.ctx.font = '600 11px Outfit';
+                    
+                    const drawStatLine = (label, value, yOffset) => {
+                        this.ctx.fillStyle = '#8b9bb4';
+                        this.ctx.fillText(label, cx + 30, cy + yOffset);
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fillText(value, cx + 160, cy + yOffset);
+                    };
+
+                    drawStatLine('MAX INTEGRITY:', lin.maxLives + ' HP', 235);
+                    drawStatLine('SPEED:', lin.speed + ' px/s', 255);
+                    const fireRateText = lin.id === 'NATURAL_KILLER' ? '3 bullets / 0.3s' : (lin.id === 'NEUTROPHIL' ? '1 bullet / 0.23s' : '1 bullet / 0.28s');
+                    drawStatLine('FIRE RATE:', fireRateText, 275);
+                    
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillStyle = '#ffd700';
+                    this.ctx.font = '700 10px Orbitron';
+                    this.ctx.fillText(lin.id === 'NATURAL_KILLER' ? 'PIERCING WEAPON' : (lin.id === 'NEUTROPHIL' ? 'RAPID SPEED' : 'BALANCED ANTIBODIES'), cx + cardWidth/2, cy + 305);
+
+                    // Restore globalAlpha so the locked banner draws cleanly
+                    this.ctx.globalAlpha = 1.0;
+
+                    if (isLocked) {
+                        // Draw locking overlay
+                        this.ctx.fillStyle = 'rgba(10, 10, 25, 0.7)';
+                        this.ctx.beginPath();
+                        this.ctx.roundRect(cx + 15, cy + 60, cardWidth - 30, 110, 6);
+                        this.ctx.fill();
+
+                        this.ctx.fillStyle = '#ff3333';
+                        this.ctx.font = '900 14px Orbitron';
+                        this.ctx.fillText('🔒 LOCKED', cx + cardWidth/2, cy + 105);
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.font = '800 10px Orbitron';
+                        this.ctx.fillText(`${unlockThresholds[lin.id].toLocaleString()} PTS REQ`, cx + cardWidth/2, cy + 130);
+                    }
+
+                    // Interactive click select regions
+                    this.registerRegion(cx, cy, cardWidth, cardHeight, () => {
+                        if (!isLocked) {
+                            this.selectedLineageIndex = idx;
+                            audio.hit();
+                        } else {
+                            // play a error-feedback sound (low rumble hit)
+                            audio.playerHit();
+                        }
+                    });
+
+                    this.ctx.restore();
+                });
+
+                // Start button bottom
+                const btnX = (CANVAS_WIDTH - 250) / 2;
+                const btnY = 700;
+                this.drawNeonButton(btnX, btnY, 250, 50, 'DEPLOY CELL', '#ffd700', () => {
+                    this.startNewGame();
+                });
+            }
+
+            drawNeonButton(x, y, w, h, text, color, callback) {
+                this.ctx.save();
+                
+                // Border glow
+                this.ctx.fillStyle = 'rgba(10, 10, 30, 0.85)';
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 2.5;
+                this.ctx.beginPath();
+                this.ctx.roundRect(x, y, w, h, 8);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '900 15px Orbitron';
+                this.ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+
+                this.ctx.restore();
+                this.registerRegion(x, y, w, h, callback);
+            }
+
+            drawPauseOverlay() {
+                this.ctx.fillStyle = 'rgba(2, 2, 7, 0.7)';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#00f3ff';
+                this.ctx.shadowBlur = 20;
+                this.ctx.shadowColor = '#00f3ff';
+                this.ctx.font = '900 44px Orbitron';
+                this.ctx.fillText('BIOME DEFENSE PAUSED', CANVAS_WIDTH / 2, 450);
+                this.ctx.font = '600 16px Outfit';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillText('Press [P] to Resume cellular transmission', CANVAS_WIDTH / 2, 500);
+            }
+
+            drawStageClearOverlay() {
+                this.ctx.save();
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#39ff14';
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = '#39ff14';
+                this.ctx.font = '900 48px Orbitron';
+                this.ctx.fillText('STAGE CLEARED', CANVAS_WIDTH / 2, 450);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '600 16px Outfit';
+                this.ctx.fillText('Neutralization complete. Preparing next sector...', CANVAS_WIDTH / 2, 490);
+                this.ctx.restore();
+            }
+
+            drawGameOver() {
+                this.clickRegions = [];
+
+                this.ctx.fillStyle = '#020207';
+                this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                this.drawGridGrid();
+
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#ff3333';
+                this.ctx.shadowBlur = 20;
+                this.ctx.shadowColor = '#ff3333';
+                this.ctx.font = '900 64px Orbitron';
+                this.ctx.fillText('HOST DESTROYED', CANVAS_WIDTH / 2, 220);
+                
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = '600 18px Outfit';
+                this.ctx.fillText('Cellular integrity collapsed. Pathogenic breach successful.', CANVAS_WIDTH / 2, 270);
+
+                // Run summary stats
+                const statY = 320;
+                this.ctx.textAlign = 'left';
+                this.ctx.font = '600 14px Outfit';
+                this.ctx.fillStyle = '#8b9bb4';
+                
+                const drawGameOverStat = (lbl, val, yOff) => {
+                    this.ctx.fillStyle = '#8b9bb4';
+                    this.ctx.fillText(lbl, 320, statY + yOff);
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.fillText(val, 520, statY + yOff);
+                };
+
+                drawGameOverStat('FINAL SCORE:', this.score, 0);
+                drawGameOverStat('SECTORS PURIFIED:', this.stage, 25);
+                drawGameOverStat('PATHOGENS LYSED:', this.kills, 50);
+                drawGameOverStat('LINEAGE DEPLOYED:', this.player.lineage.name, 75);
+
+                // Leaderboard
+                this.drawLeaderboardOverlay(CANVAS_WIDTH / 2, 470);
+
+                // Restart button
+                const btnX = (CANVAS_WIDTH - 250) / 2;
+                const btnY = 820;
+                this.drawNeonButton(btnX, btnY, 250, 52, 'RETURN TO MAIN', '#00f3ff', () => {
+                    this.state = 'MENU';
+                    audio.hit();
+                });
+            }
+
+            drawLeaderboardOverlay(cx, cy) {
+                this.ctx.save();
+                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#ffd700';
+                this.ctx.font = '800 14px Orbitron';
+                this.ctx.fillText('TOP 5 DEFENDER BENCHMARKS', cx, cy);
+
+                const tableY = cy + 25;
+                const rowH = 24;
+
+                this.ctx.fillStyle = 'rgba(10, 10, 25, 0.7)';
+                this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.2)';
+                this.ctx.lineWidth = 1.5;
+                this.ctx.beginPath();
+                this.ctx.roundRect(cx - 250, tableY, 500, rowH * 6 + 10, 6);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Table headers
+                this.ctx.fillStyle = '#8b9bb4';
+                this.ctx.font = '800 10px Orbitron';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText('MEDAL', cx - 230, tableY + 20);
+                this.ctx.fillText('LINEAGE', cx - 140, tableY + 20);
+                this.ctx.fillText('STAGE', cx + 70, tableY + 20);
+                this.ctx.fillText('SCORE', cx + 160, tableY + 20);
+
+                // Divider line
+                this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.15)';
+                this.ctx.beginPath();
+                this.ctx.moveTo(cx - 235, tableY + 28);
+                this.ctx.lineTo(cx + 235, tableY + 28);
+                this.ctx.stroke();
+
+                // Records list
+                this.ctx.font = '600 12px Outfit';
+                const count = Math.max(5, this.leaderboard.length);
+                const loopIter = Array.from({ length: 5 });
+
+                loopIter.forEach((_, idx) => {
+                    const rowY = tableY + 46 + idx * rowH;
+                    const record = this.leaderboard[idx];
+
+                    // Medal indicators
+                    const medalLabels = ['❶ GOLD', '❷ SILVER', '❸ BRONZE', '❹', '❺'];
+                    const medalColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#8b9bb4', '#8b9bb4'];
+                    
+                    this.ctx.fillStyle = medalColors[idx];
+                    this.ctx.font = '800 11px Orbitron';
+                    this.ctx.fillText(medalLabels[idx], cx - 230, rowY);
+                    
+                    this.ctx.font = '600 12px Outfit';
+                    if (record) {
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fillText(record.lineage.substring(0, 15), cx - 140, rowY);
+                        this.ctx.fillText(record.stage, cx + 70, rowY);
+                        this.ctx.fillText(record.score, cx + 160, rowY);
+                    } else {
+                        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                        this.ctx.fillText('---', cx - 140, rowY);
+                        this.ctx.fillText('---', cx + 70, rowY);
+                        this.ctx.fillText('---', cx + 160, rowY);
+                    }
+                });
+
+                this.ctx.restore();
+            }
+        }
+
+        // --- LAUNCH ENGINE ---
+        const game = new BiomeGame();
+        game.init();
+
+    </script>
+    <!-- APAF Bioinformatics | index.html | Approved -->
+</body>
+</html>

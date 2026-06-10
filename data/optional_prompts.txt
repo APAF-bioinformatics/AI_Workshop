@@ -50,29 +50,7 @@ In each update(dt), lateral drift = driftAmp * cos(age * driftFreq + driftPhase)
 
 ---
 
-### PROMPT 8: PLAYABLE LINEAGE - NEUTROPHIL
-"Design the Neutrophil (Rapid Responder) lineage:
-- Unlocks at 100 total kills
-- High speed (470px/s)
-- Fast fire rate (0.16s)
-- 2 starting lives (max 3)
-- Small yellow granule bullets
-- Multi-lobed nucleus connected by thin strands, granular cytoplasm"
-
----
-
-### PROMPT 9: PLAYABLE LINEAGE - NK CELL
-"Design the NK Cell (Natural Killer) lineage:
-- Unlocks at 300 total kills
-- Moderate speed (320px/s)
-- Fire rate (0.28s)
-- 3 starting lives (max 4)
-- ALWAYS fires a burst of 3 magenta perforin ring projectiles (center + ±0.18 dx spread) per trigger, each piercing up to 3 enemies. This makes it a high-damage area denial weapon.
-- When Triple Shot is active, NK cell fires 3 rings per position × 3 positions = 9 rings total."
-
----
-
-### PROMPT 10: GALAGA ENTRY FORMATION
+### PROMPT 8: GALAGA ENTRY FORMATION
 "Implement a dynamic Galaga-style swooping entry formation when a stage is initialized:
 - Pathogens enter the screen in a staggered stream (staggered by index * 0.15s).
 - Swooping from offscreen top-left (even columns) and top-right (odd columns) along Quadratic Bezier curves looping low near the center-bottom of the canvas before gliding to their home grid slots.
@@ -81,12 +59,12 @@ In each update(dt), lateral drift = driftAmp * cos(age * driftFreq + driftPhase)
 
 ---
 
-### PROMPT 11: TOXIN CARRIER (UFO)
+### PROMPT 9: TOXIN CARRIER (UFO)
 "Create a special Toxin Carrier (viroid capsule) representing the classic Space Invaders UFO: it sweeps horizontally across the top section of the screen every 15-35 seconds, awarding 500 bonus points and a guaranteed power-up drop when destroyed."
 
 ---
 
-### PROMPT 12: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
+### PROMPT 10: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
 "Extend the Mutagen Boss FSM with two additional states:
 - SWEEP_BEAM: sweeps side-to-side at 300px/s for 3.5s while streaming 5-bullet downward fan spreads (−90°, −45°, 0°, +45°, +90°) with 25% probability per frame. Then returns to PATROL.
 - SUMMON: spawns Virus minions (up to 8 on-screen), then returns to PATROL.
@@ -94,7 +72,7 @@ Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM."
 
 ---
 
-### PROMPT 13: DEV TOOLS & DIAGNOSTICS SUITE
+### PROMPT 11: DEV TOOLS & DIAGNOSTICS SUITE
 "Expose a global testing suite under window.immunityTest containing:
 - runAll(): executes keyboard event mocks and checks game parameters like difficulty configurations, active power-up updates, lineage locks, audio toggle functionality, and complement charge logic, logging assertions to the browser console.
 - grantAll(): sets inventory items to 5 and complements to 4.
