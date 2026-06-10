@@ -1,3 +1,9 @@
+# Quick Start: Setting Up the Repository
+
+*   Download the AI Workshop repository from the GitHub page (refer to the link in `references.md`).
+*   Unzip the downloaded repository files on your local machine.
+*   Open the workspace folder in your Antigravity IDE and begin exploring the codebase!
+
 # Initially Building the Game
 
 * These are just for demo; you can ignore this section.

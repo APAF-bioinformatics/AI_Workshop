@@ -17,7 +17,7 @@ This file tracks all external URLs used in the AI Workshop (Immunity Protocol) p
 
 ## Backup & Repository
 - **GitHub Repository**: [AI_Workshop](https://github.com/APAF-bioinformatics/AI_Workshop)
-- **Previous Repository Name**: [AI_Workshop_Preparations Backup](https://github.com/APAF-bioinformatics/AI_Workshop_Preparations)
+- **Previous Repository Name**: [AI_Workshop_Preparations Backup](https://github.com/APAF-bioinformatics/AI_Workshop)
 
 <!-- APAF Bioinformatics | references.md | Approved | 2026-06-10 -->
 
