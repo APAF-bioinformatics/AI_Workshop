@@ -12,7 +12,7 @@ apaf_version: 1.0.0
 apaf_org: APAF Bioinformatics
 -->
 
-# Handover: <YYYY-MM-DD> — <Your Name>
+# Handover: <YYYY-MM-DD HH:MM> — <Your Name>
 
 ## Repository/Project
 <e.g. APAF-bioinformatics/intact-mass-spec-tool>
