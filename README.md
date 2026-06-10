@@ -49,7 +49,7 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 To protect privacy and minimize network usage during the workshop, please disable telemetry:
 
-1. In the bottom-left corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item (as shown in Step 1 of Section 5).
+1. In the bottom-right corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item (as shown in Step 1 of Section 5).
 2. Click on the **Advanced Settings** link located at the bottom of the settings popup.
 3. In the Left Sidebar of the Advanced Settings window, select **Account**.
 4. In the **General** section, toggle the **Enable Telemetry** switch to **OFF** (gray/disabled).
