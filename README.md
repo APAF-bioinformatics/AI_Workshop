@@ -1,6 +1,6 @@
 # Antigravity IDE & Plugins Setup Guide
 
-This guide provides instructions on how to install the Antigravity IDE, configure its built-in Google developer plugins (such as Android, Modern Web Guidance, Google Antigravity SDK, Science, Firebase, and Chrome DevTools), and set up prerequisite tools like Google Chrome and a Google Account.
+This guide provides instructions on how to install the Antigravity IDE, configure its built-in Google developer plugins (such as Android, Modern Web Guidance, Google Antigravity SDK, Science, Firebase, and Chrome DevTools), and set up prerequisite tools like Google Chrome, a Google Account, and the workshop repository.
 
 ---
 
@@ -10,8 +10,9 @@ Please complete the following checklist steps in order:
 - [ ] 1. Create a Google Account (see Section 1)
 - [ ] 2. Install Google Chrome Browser (see Section 2)
 - [ ] 3. Install Antigravity IDE (see Section 3)
-- [ ] 4. Install & Configure IDE Plugins (see Section 5)
-- [ ] 5. Disable Telemetry in Antigravity IDE (see Section 4)
+- [ ] 4. Download and Unzip the AI Workshop Repository (see Section 4)
+- [ ] 5. Disable Telemetry in Antigravity IDE (see Section 5)
+- [ ] 6. Install & Configure IDE Plugins (see Section 6)
 
 ---
 
@@ -45,7 +46,30 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 4. How to Install & Configure Plugins
+## 4. How to Download the AI Workshop Repository
+
+1. Navigate to the GitHub repository page: [github.com/APAF-bioinformatics/AI_Workshop](https://github.com/APAF-bioinformatics/AI_Workshop)
+2. Click the green **Code** button on the right side and select **Download ZIP**.
+3. Locate the downloaded ZIP file on your computer and extract/unzip it to a convenient folder.
+4. Open the extracted folder as a workspace in the Antigravity IDE to start playing around with the code.
+
+---
+
+## 5. How to Disable Telemetry in Antigravity IDE
+
+To protect privacy and minimize network usage during the workshop, please disable telemetry:
+
+1. In the bottom-left corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item (as shown in Step 1 of Section 6).
+2. Click on the **Advanced Settings** link located at the bottom of the settings popup.
+3. In the Left Sidebar of the Advanced Settings window, select **Account**.
+4. In the **General** section, toggle the **Enable Telemetry** switch to **OFF** (gray/disabled).
+5. Optionally, you can also toggle the **Marketing Emails** switch to **OFF**.
+
+![Disable Telemetry](images/step6_disable_telemetry.png)
+
+---
+
+## 6. How to Install & Configure Plugins
 
 Follow these step-by-step visual instructions to enable and manage plugins in the Antigravity IDE:
 
@@ -82,28 +106,15 @@ In the **Build With Google Plugins** overlay, you can enable or manage the stand
 
 ---
 
-## 4. How to Disable Telemetry in Antigravity IDE
-
-To protect privacy and minimize network usage during the workshop, please disable telemetry:
-
-1. In the bottom-right corner of the Antigravity IDE window, click on the **Antigravity - Settings** status bar item (as shown in Step 1 of Section 5).
-2. Click on the **Advanced Settings** link located at the bottom of the settings popup.
-3. In the Left Sidebar of the Advanced Settings window, select **Account**.
-4. In the **General** section, toggle the **Enable Telemetry** switch to **OFF** (gray/disabled).
-5. Optionally, you can also toggle the **Marketing Emails** switch to **OFF**.
-
-![Disable Telemetry](images/step6_disable_telemetry.png)
-
----
-
 ## ✅ Final Verification Checklist (End)
 
 Verify that all setup items are successfully complete before starting the workshop:
 - [ ] 1. Google Account is created and signed in.
 - [ ] 2. Google Chrome is installed and set as default.
 - [ ] 3. Antigravity IDE is running and showing code workspace views.
-- [ ] 4. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
-- [ ] 5. Telemetry (and marketing emails) has been disabled in Advanced Settings.
+- [ ] 4. The workshop repository has been downloaded and unzipped.
+- [ ] 5. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
+- [ ] 6. Telemetry (and marketing emails) has been disabled in Advanced Settings.
 
 ---
 
