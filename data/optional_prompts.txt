@@ -1,0 +1,102 @@
+# OPTIONAL EXTRAS — "IMMUNITY PROTOCOL"
+
+These prompts add polish, complexity, or advanced features. Include them after the core 15 prompts are working.
+
+---
+
+### PROMPT 1: BACKGROUND GRAPHICAL GRID
+"Draw a faint static microscope grid on the 2D Canvas using TWO layers of dotted lines:
+- Primary grid (100px spacing): rgba(0, 242, 254, 0.22), dash pattern [3, 15].
+- Secondary finer grid (50px spacing): rgba(0, 242, 254, 0.08), dash pattern [2, 24].
+This creates a realistic reticle-style microscope eyepiece effect."
+
+---
+
+### PROMPT 2: DEPTH-OF-FIELD DRIFTING SPECIMEN
+"Implement a depth-of-field effect with a drifting background layer: floating out-of-focus red blood cells, platelets, and faint pathogens (spiked viruses, green rod bacteria, and branched fungi) drifting slowly downward at visible opacity (0.12 to 0.26). Render these background drifters with ctx.filter = 'blur(4px)' before drawing and reset to 'none' after, to simulate specimen that is outside the focal plane of the microscope objective."
+
+---
+
+### PROMPT 3: FLUID BULLET PHYSICS
+"Implement fluid bullet physics. Both player bullets and enemy bullets must simulate movement through a viscous biological medium. Each bullet instance has:
+- age (seconds elapsed)
+- driftAmp (random 18–32px for player, 12–22px for enemy)
+- driftFreq (random 4–7 Hz for player, 3–6 Hz for enemy)
+- driftPhase (random)
+In each update(dt), lateral drift = driftAmp * cos(age * driftFreq + driftPhase) * dt, added to x position. This makes bullets curve sinusoidally as if buffeted by cytoplasmic flow."
+
+---
+
+### PROMPT 4: LIGHTWEIGHT PARTICLE EMITTER SYSTEM
+"Create a lightweight particle engine handling custom position, count, spread angle, speed, color, velocity decay, gravity, and lifespan, allowing particles to fade out smoothly on destruction."
+
+---
+
+### PROMPT 5: DYNAMIC SCREEN SHAKE
+"Implement a screen shake system that offsets the canvas context view matrix briefly on key events (player hit, pathogen lysis, boss alarms). Tracked via shakeTimer and shakeIntensity."
+
+---
+
+### PROMPT 6: EPISAFE LIFE-LOSS BLINK
+"Implement a life-loss blink effect. When the player loses a life, trigger a soft red screen flash (blinkTimer = 0.55s). In the draw loop, compute alpha = sin(ratio * π) * 0.2 where ratio = blinkTimer / 0.55, and fill the canvas with rgba(220, 30, 30, alpha). This creates a smooth bell-curve fade that is visible but will NOT trigger photosensitive epilepsy."
+
+---
+
+### PROMPT 7: COLUMN-TARGETED BARRIER COLLISION & BOUNDARY CHECKS
+"Implement column-targeted hit detection for player bullets and enemy bullets on destructible barriers to allow bullets to pass through destroyed channels without horizontal blocking:
+- Determine the exact column 'c' by division of the bullet bounding box's center X coordinate relative to the barrier's start X coordinate. Bullets will only check and collide with block layers in that specific column 'c' and cannot be blocked horizontally by adjacent columns.
+- Implement tunneling-resistant boundary checks: player bullets traveling upwards (reverse=true) erode the column starting from the bottom-most active block of column 'c' up, triggering a collision if the bullet's top edge is at or below the bottom-most active block's bottom edge (and the bullet's bottom edge has not completely passed above the barrier's startY); enemy bullets traveling downwards erode the column starting from the top-most active block of column 'c' down, triggering a collision if the bullet's bottom edge is at or above the top-most active block's top edge (and the bullet's top edge has not completely passed below the barrier's bottom edge).
+- A single vertical column channel (all 5 layers of column 'c') must be completely destroyed before bullets passing through that column index can traverse the barrier without collision."
+
+---
+
+### PROMPT 8: PLAYABLE LINEAGE - NEUTROPHIL
+"Design the Neutrophil (Rapid Responder) lineage:
+- Unlocks at 100 total kills
+- High speed (470px/s)
+- Fast fire rate (0.16s)
+- 2 starting lives (max 3)
+- Small yellow granule bullets
+- Multi-lobed nucleus connected by thin strands, granular cytoplasm"
+
+---
+
+### PROMPT 9: PLAYABLE LINEAGE - NK CELL
+"Design the NK Cell (Natural Killer) lineage:
+- Unlocks at 300 total kills
+- Moderate speed (320px/s)
+- Fire rate (0.28s)
+- 3 starting lives (max 4)
+- ALWAYS fires a burst of 3 magenta perforin ring projectiles (center + ±0.18 dx spread) per trigger, each piercing up to 3 enemies. This makes it a high-damage area denial weapon.
+- When Triple Shot is active, NK cell fires 3 rings per position × 3 positions = 9 rings total."
+
+---
+
+### PROMPT 10: GALAGA ENTRY FORMATION
+"Implement a dynamic Galaga-style swooping entry formation when a stage is initialized:
+- Pathogens enter the screen in a staggered stream (staggered by index * 0.15s).
+- Swooping from offscreen top-left (even columns) and top-right (odd columns) along Quadratic Bezier curves looping low near the center-bottom of the canvas before gliding to their home grid slots.
+- The player is not locked and can move/shoot pathogens mid-flight immediately upon stage start.
+- Keep the collective grid movement inactive as long as any pathogen is still swooping."
+
+---
+
+### PROMPT 11: TOXIN CARRIER (UFO)
+"Create a special Toxin Carrier (viroid capsule) representing the classic Space Invaders UFO: it sweeps horizontally across the top section of the screen every 15-35 seconds, awarding 500 bonus points and a guaranteed power-up drop when destroyed."
+
+---
+
+### PROMPT 12: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
+"Extend the Mutagen Boss FSM with two additional states:
+- SWEEP_BEAM: sweeps side-to-side at 300px/s for 3.5s while streaming 5-bullet downward fan spreads (−90°, −45°, 0°, +45°, +90°) with 25% probability per frame. Then returns to PATROL.
+- SUMMON: spawns Virus minions (up to 8 on-screen), then returns to PATROL.
+Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM."
+
+---
+
+### PROMPT 13: DEV TOOLS & DIAGNOSTICS SUITE
+"Expose a global testing suite under window.immunityTest containing:
+- runAll(): executes keyboard event mocks and checks game parameters like difficulty configurations, active power-up updates, lineage locks, audio toggle functionality, and complement charge logic, logging assertions to the browser console.
+- grantAll(): sets inventory items to 5 and complements to 4.
+- skipToBoss(): advances immediately to stage 5 boss.
+- setInvincible(boolean): prevents the player cell from taking damage."
