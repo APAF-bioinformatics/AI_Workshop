@@ -1,23 +1,33 @@
 # OPTIONAL EXTRAS — "IMMUNITY PROTOCOL"
 
-These prompts add polish, complexity, or advanced features. Include them after the core 15 prompts are working.
+These prompts add polish, complexity, or advanced features. They are ordered from lowest difficulty to highest difficulty, prioritizing immediate visual feedback ("fun juice") first before tackling advanced math and state machines.
 
 ---
 
-### PROMPT 1: BACKGROUND GRAPHICAL GRID
+### PROMPT 1: DOTTED MICROSCOPE GRID & BLURRED DRIFTING BACKGROUND
+**Difficulty: Easy | Fun: Medium**
+
 "Draw a faint static microscope grid on the 2D Canvas using TWO layers of dotted lines:
 - Primary grid (100px spacing): rgba(0, 242, 254, 0.22), dash pattern [3, 15].
 - Secondary finer grid (50px spacing): rgba(0, 242, 254, 0.08), dash pattern [2, 24].
 This creates a realistic reticle-style microscope eyepiece effect."
 
----
-
-### PROMPT 2: DEPTH-OF-FIELD DRIFTING SPECIMEN
 "Implement a depth-of-field effect with a drifting background layer: floating out-of-focus red blood cells, platelets, and faint pathogens (spiked viruses, green rod bacteria, and branched fungi) drifting slowly downward at visible opacity (0.12 to 0.26). Render these background drifters with ctx.filter = 'blur(4px)' before drawing and reset to 'none' after, to simulate specimen that is outside the focal plane of the microscope objective."
 
 ---
 
+### PROMPT 2: DYNAMIC SCREEN SHAKE & EPISAFE LIFE-LOSS BLINK
+**Difficulty: Easy | Fun: High**
+
+"Implement a screen shake system that offsets the canvas context view matrix briefly on key events (player hit, pathogen lysis, boss alarms). Tracked via shakeTimer and shakeIntensity."
+
+"Implement a life-loss blink effect. When the player loses a life, trigger a soft red screen flash (blinkTimer = 0.55s). In the draw loop, compute alpha = sin(ratio * π) * 0.2 where ratio = blinkTimer / 0.55, and fill the canvas with rgba(220, 30, 30, alpha). This creates a smooth bell-curve fade that is visible but will NOT trigger photosensitive epilepsy."
+
+---
+
 ### PROMPT 3: FLUID BULLET PHYSICS
+**Difficulty: Easy | Fun: Medium**
+
 "Implement fluid bullet physics. Both player bullets and enemy bullets must simulate movement through a viscous biological medium. Each bullet instance has:
 - age (seconds elapsed)
 - driftAmp (random 18–32px for player, 12–22px for enemy)
@@ -28,43 +38,15 @@ In each update(dt), lateral drift = driftAmp * cos(age * driftFreq + driftPhase)
 ---
 
 ### PROMPT 4: LIGHTWEIGHT PARTICLE EMITTER SYSTEM
+**Difficulty: Medium | Fun: High**
+
 "Create a lightweight particle engine handling custom position, count, spread angle, speed, color, velocity decay, gravity, and lifespan, allowing particles to fade out smoothly on destruction."
 
 ---
 
-### PROMPT 5: DYNAMIC SCREEN SHAKE
-"Implement a screen shake system that offsets the canvas context view matrix briefly on key events (player hit, pathogen lysis, boss alarms). Tracked via shakeTimer and shakeIntensity."
+### PROMPT 5: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
+**Difficulty: Medium | Fun: High**
 
----
-
-### PROMPT 6: EPISAFE LIFE-LOSS BLINK
-"Implement a life-loss blink effect. When the player loses a life, trigger a soft red screen flash (blinkTimer = 0.55s). In the draw loop, compute alpha = sin(ratio * π) * 0.2 where ratio = blinkTimer / 0.55, and fill the canvas with rgba(220, 30, 30, alpha). This creates a smooth bell-curve fade that is visible but will NOT trigger photosensitive epilepsy."
-
----
-
-### PROMPT 7: COLUMN-TARGETED BARRIER COLLISION & BOUNDARY CHECKS
-"Implement column-targeted hit detection for player bullets and enemy bullets on destructible barriers to allow bullets to pass through destroyed channels without horizontal blocking:
-- Determine the exact column 'c' by division of the bullet bounding box's center X coordinate relative to the barrier's start X coordinate. Bullets will only check and collide with block layers in that specific column 'c' and cannot be blocked horizontally by adjacent columns.
-- Implement tunneling-resistant boundary checks: player bullets traveling upwards (reverse=true) erode the column starting from the bottom-most active block of column 'c' up, triggering a collision if the bullet's top edge is at or below the bottom-most active block's bottom edge (and the bullet's bottom edge has not completely passed above the barrier's startY); enemy bullets traveling downwards erode the column starting from the top-most active block of column 'c' down, triggering a collision if the bullet's bottom edge is at or above the top-most active block's top edge (and the bullet's top edge has not completely passed below the barrier's bottom edge).
-- A single vertical column channel (all 5 layers of column 'c') must be completely destroyed before bullets passing through that column index can traverse the barrier without collision."
-
----
-
-### PROMPT 8: GALAGA ENTRY FORMATION
-"Implement a dynamic Galaga-style swooping entry formation when a stage is initialized:
-- Pathogens enter the screen in a staggered stream (staggered by index * 0.15s).
-- Swooping from offscreen top-left (even columns) and top-right (odd columns) along Quadratic Bezier curves looping low near the center-bottom of the canvas before gliding to their home grid slots.
-- The player is not locked and can move/shoot pathogens mid-flight immediately upon stage start.
-- Keep the collective grid movement inactive as long as any pathogen is still swooping."
-
----
-
-### PROMPT 9: TOXIN CARRIER (UFO)
-"Create a special Toxin Carrier (viroid capsule) representing the classic Space Invaders UFO: it sweeps horizontally across the top section of the screen every 15-35 seconds, awarding 500 bonus points and a guaranteed power-up drop when destroyed."
-
----
-
-### PROMPT 10: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
 "Extend the Mutagen Boss FSM with two additional states:
 - SWEEP_BEAM: sweeps side-to-side at 300px/s for 3.5s while streaming 5-bullet downward fan spreads (−90°, −45°, 0°, +45°, +90°) with 25% probability per frame. Then returns to PATROL.
 - SUMMON: spawns Virus minions (up to 8 on-screen), then returns to PATROL.
@@ -72,9 +54,33 @@ Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM."
 
 ---
 
-### PROMPT 11: DEV TOOLS & DIAGNOSTICS SUITE
-"Expose a global testing suite under window.immunityTest containing:
-- runAll(): executes keyboard event mocks and checks game parameters like difficulty configurations, active power-up updates, lineage locks, audio toggle functionality, and complement charge logic, logging assertions to the browser console.
-- grantAll(): sets inventory items to 5 and complements to 4.
-- skipToBoss(): advances immediately to stage 5 boss.
-- setInvincible(boolean): prevents the player cell from taking damage."
+### PROMPT 6: CONGA LINE ENTRY FORMATION
+**Difficulty: Medium-High | Fun: High**
+
+"Implement a dynamic Conga Line entry formation when a stage is initialized:
+- Group and order the pathogens sequentially by columns to form a single-file queue. The center columns must fill first, ordering the columns from center to outward: Columns 3 and 4 first (top-to-bottom), then Columns 2 and 5, then Columns 1 and 6, and finally Columns 0 and 7.
+- Pathogens must enter the screen in a closely spaced, flowing train (one after another); a pathogen begins its swoop flight when the previous pathogen in the queue is slightly ahead on the flight path (e.g., when the predecessor has reached 8% of its flight completion), allowing multiple pathogens to follow each other mid-flight along the curve.
+- Flight path: Pathogens swoop from offscreen (top-left for even columns, top-right for odd columns) down toward the center-bottom, execute a full 360-degree circular loop (radius ~100px) around a center point near (450, 600), and then glide smoothly from the loop to their home grid slots.
+- The player cell is fully active (unlocked) and can move/shoot pathogens mid-flight immediately upon stage start.
+- Keep collective grid movement (side-to-side drift and descent) inactive as long as any pathogen is still swooping or hasn't arrived at its home slot."
+
+---
+
+### PROMPT 7: VARIANT PATHOGEN GRID FORMATIONS
+**Difficulty: High | Fun: Very High**
+
+"Introduce variety to non-boss stages by implementing three distinct structural formations that cycle dynamically based on the stage number:
+- Formation 1 (Alternating Concentric Circles): Arrange pathogens in three concentric circles (outer radius 180px, middle 120px, inner 60px) rotating around a central point (450, 250). Symmetrically alternate rotation directions (e.g., outer and inner circles rotate clockwise, middle rotates counter-clockwise) at a constant angular speed of 0.5 rad/s.
+- Formation 2 (Pulsating Star Shape): Arrange pathogens in a 5-pointed star layout. The entire formation drifts side-to-side while continuously pulsating in size (scaling its coordinates dynamically between 85% and 115% of its native size using a sine-wave function: `scale = 1.0 + 0.15 * sin(time * 2.0)`).
+- Formation 3 (Undulating Wave Shape): Arrange pathogens in a double-sine wave layout. As the formation drifts horizontally, each column undulates vertically based on elapsed time and its horizontal position (`y = base_y + 40 * sin(time * 3.0 + colIndex * 0.5)`), creating a fluid wave animation across the screen.
+- Each of these formations will still have to move down over time as per the rectangular formation."
+
+---
+
+### PROMPT 8: CUSTOM ENHANCED BOSS ENCOUNTERS
+**Difficulty: High | Fun: Very High**
+
+"Design and implement a custom advanced boss stage (e.g., at Stage 10) featuring a multi-phase boss ('Bio-Carrier Overlord'):
+- Phase 1 (Shielded): The boss is surrounded by 4 orbiting shield-generator nodes (each having 10 HP). The boss itself is immune to all damage until all 4 orbital nodes are destroyed.
+- Phase 2 (Enraged): Once the shield is broken, the boss glows deep magenta, increases its movement speed by 40%, and changes its firing pattern to fire rapid homing bullets targeting the player cell directly.
+- Add dynamic status text and particle bursts indicating shield collapse and phase transitions."
