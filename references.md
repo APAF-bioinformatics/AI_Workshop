@@ -10,6 +10,7 @@ This file tracks all external URLs used in the AI Workshop (Immunity Protocol) p
 ## Assets & Fonts
 - **Google Fonts (Outfit & JetBrains Mono)**: [Google Fonts](https://fonts.googleapis.com)
   - CSS Import URL: `https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap`
+- **Mermaid JS CDN**: [cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js)
 
 ## Documentation & API Guides
 - **MDN Web Audio API**: [Web Audio API Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)

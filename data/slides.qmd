@@ -1,0 +1,226 @@
+---
+title: "Immunity Protocol"
+subtitle: "AI Coding Workshop: Debugging & Advanced Polish"
+format: 
+  pptx:
+    slide-level: 2
+---
+
+# Introduction
+
+## Workshop Overview & Objective
+
+*   **Goal:** Recreate "Immunity Protocol" — a cellular-themed defensive space shooter.
+*   **Technologies:** HTML5 Canvas, Web Audio API, Vanilla CSS, modern JavaScript.
+*   **Focus Areas:**
+    1.  Core physics (fluid movement through viscous medium).
+    2.  Procedural audio synthesis (no external library, clean synthesis).
+    3.  FSM state design (boss behaviors, variant waves).
+    4.  Design aesthetics (microscope grids, light particle systems).
+
+---
+
+## Agenda & Setup (On-the-Day)
+
+1. **Repository Setup:** Clone the repository and unzip.
+2. **Starter File Placement:**
+   * Copy `data/index_to_debug.html` to the root folder.
+   * Rename it to `index.html`.
+3. **Core Task:** Resolve 5 critical bugs in `index.html` (Tasks A–E).
+4. **Advanced Polish:** Implement optional enhancements (Prompts 16–24) using the custom `impeccable-design` system rules.
+
+---
+
+## Architecture Flowchart
+
+![Architecture Flowchart](images/architecture_flowchart.png)
+
+# Core Debugging Tasks
+
+## Core Debugging: Tasks A & B
+
+:::: {.columns}
+::: {.column width="50%"}
+### 🚀 Task A: Jerky Player Movement
+*   **Problem:** Horizontal cell movement is jerky and changes coordinates erratically.
+*   **Goal:** Replace unstable position updates with linear interpolation (lerp) or damping:
+    `targetDir += (moveDir - targetDir) * dt * 15.0`
+:::
+
+::: {.column width="50%"}
+### 📊 Task B: Complement UI Alignment
+*   **Problem:** Complement HUD tracker text overflows past the right side of the screen boundary.
+*   **Goal:** Align margins and positioning coordinates inside the HUD render loop.
+:::
+::::
+
+---
+
+## Core Debugging: Task C (Barrier Collision)
+
+:::: {.columns}
+::: {.column width="50%"}
+### 🛡️ Layer-by-Layer Damage
+*   **Problem:** Damage applies out of order (starting at row 2 instead of the row closest to the projectile).
+*   **Rules:**
+    *   Player bullets damage bottom-most block in a column.
+    *   Enemy bullets damage top-most block in a column.
+    *   Bullets cannot pass through until the column is empty.
+:::
+
+::: {.column width="50%"}
+![Pathogen Grid & Barriers](images/formation_grid.png)
+:::
+::::
+
+---
+
+## Core Debugging: Task D (Boss Spawn Freeze)
+
+:::: {.columns}
+::: {.column width="50%"}
+### 👾 Boss FSM Rescue
+*   **Problem:** Spawning the stage 5 boss causes the game loop to freeze.
+*   **Shortcut for Testing:** Bind key `8` to skip straight to the next boss level (Stage 5, 10, 15, etc.).
+*   *Note:* Ensure shortcut listeners are removed after testing.
+:::
+
+::: {.column width="50%"}
+![Mutagen Cell Spawn Warning](images/boss_alert.png)
+:::
+::::
+
+---
+
+## Core Debugging: Task E (Lineage Unlock Logic)
+
+*   **Goal:** Lock the **Natural Killer** (NK) cell and **Neutrophil** cell lineages initially.
+*   **Unlock Threshold:** Enable lineage selection only when the persistent player high score surpasses the unlock threshold (15,000 points).
+
+---
+
+## Testing Notes: Managing Console & High Scores
+
+Open DevTools Console (`F12` or `Cmd+Option+I` on Mac) to test locks:
+
+*   **Reset High Score Only:**
+    ```javascript
+    localStorage.removeItem('immunity_highscore');
+    ```
+*   **Reset Everything (High Score & Leaderboard):**
+    ```javascript
+    localStorage.clear();
+    ```
+*   **Unlock All Cells Instantly (Set Score to 15,000):**
+    ```javascript
+    localStorage.setItem('immunity_highscore', '15000');
+    ```
+
+# Advanced Polish & Extension Prompts
+
+## Optional Advanced Polish: Design System (Prompt 16)
+
+Ensure your additions follow the **Impeccable Design** system rules:
+
+*   **Motion Design:** Use custom cubic-bezier deceleration curves (`cubic-bezier(0.22, 1, 0.36, 1)`) for drift/UI animations instead of linear steps.
+*   **Color Uniformity:** Define visual asset colors in the perceptually uniform OKLCH space. Use tinted brand neutrals instead of flat grays.
+*   **Design Assets Map:**
+    *   Motion Guidelines: `.gemini/skills/impeccable-design/reference/animate.md`
+    *   Color Rules: `.gemini/skills/impeccable-design/reference/colorize.md`
+
+---
+
+## Visual Easing, Microscope Grids & Bullets (Prompts 17-19)
+
+*   **Prompt 17 (Microscope Grid & Specimen Drift):**
+    *   Double-layered dotted reticle grids (`[3, 15]` and `[2, 24]` dash spacing).
+    *   Out-of-focus background speculation elements (platelets, cells) drifting slowly with canvas filter blur:
+        `ctx.filter = 'blur(4px)'`
+*   **Prompt 18 (Screen Shake & Episafe Blink):**
+    *   Screen shake matrix offsets triggered on lysis and damage events.
+    *   Episafe red life-loss screen blink (`sin(ratio * π) * 0.2` opacity).
+*   **Prompt 19 (Fluid Bullets):** Sinusoidal sideways drift added to update cycles to simulate trajectory movement in thick cytoplasm.
+
+---
+
+## Particle Emitters & Boss Extensions (Prompts 20-21)
+
+*   **Prompt 20 (Lightweight Particle Engine):**
+    *   Fading particle bursts triggered during pathogen lysis (explosions) and player cell hits.
+    *   Must control angle spreads, velocity decay, and canvas alpha decays cleanly.
+*   **Prompt 21 (Boss FSM Extensions):**
+    *   `SWEEP_BEAM`: Side-to-side sweeping while firing 5-bullet downward spreads (`-90°` to `+90°`).
+    *   `SUMMON`: Spawn helper Virus minions (max 8 on screen).
+    *   *Bug Prevention:* Clear all remaining minion objects from memory immediately when the boss is lysed.
+
+---
+
+## Boss State Transition Map (With Sweep & Summon)
+
+![Boss State Transition Map](images/boss_fsm.png)
+
+---
+
+## Conga Line Swoop & Shielded Boss (Prompts 22, 24)
+
+*   **Prompt 22 (Conga Line Entry Choreography):**
+    *   Pathogens swoop onto the screen one by one from top-left/top-right.
+    *   Perform a `360-degree loop` at the screen center before drifting to their home grid slots.
+*   **Prompt 24 (Bio-Carrier Overlord):**
+    *   **Phase 1:** Protected by 4 orbiting generator nodes (10 HP each). Boss is completely immune to damage while nodes live.
+    *   **Phase 2:** Nodes collapse, triggering magenta color shift, +40% speed boost, and homing projectile target locking.
+
+---
+
+## Advanced Formations: Star Formation (Prompt 23)
+
+:::: {.columns}
+::: {.column width="50%"}
+### Pulsating Star
+*   Arranged in a 5-pointed star.
+*   Drifts horizontally while pulsating between 85% and 115% scale:
+    `scale = 1.0 + 0.15 * sin(time * 2.0)`
+:::
+
+::: {.column width="50%"}
+![Star Formation](images/formation_star.png)
+:::
+::::
+
+---
+
+## Advanced Formations: Concentric Circles (Prompt 23)
+
+:::: {.columns}
+::: {.column width="50%"}
+### Alternating Concentric Rings
+*   Pathogens occupy three nested rings (180px, 120px, and 60px radii).
+*   Outer/inner rings rotate clockwise, middle ring rotates counter-clockwise.
+*   Constant rotation speed of `0.5 rad/s`.
+:::
+
+::: {.column width="50%"}
+![Circle Formation](images/formation_circle.png)
+:::
+::::
+
+---
+
+## Advanced Formations: Undulating Wave (Prompt 23)
+
+:::: {.columns}
+::: {.column width="50%"}
+### Undulating Wave Shape
+*   Arrange pathogens in a double-sine wave layout.
+*   As the formation drifts horizontally, each column undulates vertically based on elapsed time and its horizontal position:
+    `y = base_y + 40 * sin(time * 3.0 + colIndex * 0.5)`
+*   Creates a fluid wave animation across the screen.
+*   Each of these formations will still have to move down over time as per the rectangular formation.
+:::
+
+::: {.column width="50%"}
+![Undulating Wave Grid](images/formation_grid.png)
+:::
+::::
+
+<!-- APAF Bioinformatics | slides.qmd | Approved | 2026-06-12 -->
