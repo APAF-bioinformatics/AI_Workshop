@@ -43,7 +43,8 @@ Note: Extra Life (+1) power-ups do NOT use a key — they are auto-applied on co
 ### PROMPT 5: PLAYER MOVEMENT CONTROLLER
 "Design the player input controller:
 - Movement/Controls: Left/Right movement via Arrow Keys or A/D.
-- Snappy physics: High friction (18.0) and high acceleration (speed * friction * 1.5) to allow precise positioning of the cell without slidy horizontal drift."
+- Snappy physics: Friction (e.g. 10.0 to 18.0) and high acceleration (speed * friction * 1.5) to allow precise positioning of the cell without slidy horizontal drift.
+- Smooth control: Smooth the raw horizontal input using linear interpolation (lerp) before accelerating (e.g. `targetDir += (moveDir - targetDir) * dt * 15.0`) to give the player cell a luxurious, fluid movement feel simulating motion through a viscous medium."
 
 ---
 

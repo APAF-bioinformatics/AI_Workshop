@@ -475,6 +475,7 @@
                 this.fireTimer = 0;
                 this.invincibilityTimer = 0;
                 this.pulse = 0;
+                this.targetDir = 0; // Smoothed movement direction axis
             }
 
             update(dt, keys, tripleShotActive, rapidFireActive) {
@@ -485,10 +486,13 @@
                 if (keys['ArrowLeft'] || keys['KeyA'] || keys['a']) moveDir = -1;
                 if (keys['ArrowRight'] || keys['KeyD'] || keys['d']) moveDir = 1;
 
+                // Interpolate input direction for butter-smooth acceleration curves
+                this.targetDir += (moveDir - this.targetDir) * dt * 15.0;
+
                 // Physics (Friction and Snappy acceleration)
-                const friction = 18.0;
+                const friction = 10.0;
                 const accel = this.speed * friction * 1.5;
-                const targetAccel = moveDir * accel;
+                const targetAccel = this.targetDir * accel;
 
                 // Analytical solution for velocity update to prevent numerical instability at variable dt
                 const decay = Math.exp(-friction * dt);
@@ -1754,8 +1758,7 @@
                         const radius = config.radius;
                         const type = config.type;
                         
-                        const circlePathogens = [];
-                        for (let j = 0; j < count; j++) {
+                        const circlePathogens = Array.from({ length: count }).map((_, j) => {
                             const theta = (j / count) * 2 * Math.PI;
                             const px = 450 + Math.cos(theta) * radius;
                             const py = 250 + Math.sin(theta) * radius;
@@ -1764,8 +1767,8 @@
                             p.circleIndex = cIdx;
                             p.baseAngle = theta;
                             p.circleRadius = radius;
-                            circlePathogens.push(p);
-                        }
+                            return p;
+                        });
                         
                         // Add to pathogens list
                         this.pathogens.push(...circlePathogens);
@@ -1773,16 +1776,15 @@
                 }
                 else if (formationType === 'star') {
                     // 5-pointed star layout
-                    const starVertices = [];
-                    for (let i = 0; i < 10; i++) {
+                    const starVertices = Array.from({ length: 10 }).map((_, i) => {
                         const angle = -Math.PI / 2 + i * (Math.PI / 5);
                         const r = (i % 2 === 0) ? 180 : 80;
-                        starVertices.push({ x: 450 + Math.cos(angle) * r, y: 250 + Math.sin(angle) * r });
-                    }
+                        return { x: 450 + Math.cos(angle) * r, y: 250 + Math.sin(angle) * r };
+                    });
 
                     const numPathogens = 32;
                     const totalSegments = 10;
-                    for (let pIdx = 0; pIdx < numPathogens; pIdx++) {
+                    Array.from({ length: numPathogens }).forEach((_, pIdx) => {
                         const segmentProgress = (pIdx / numPathogens) * totalSegments;
                         const segIdx = Math.floor(segmentProgress) % totalSegments;
                         const nextSegIdx = (segIdx + 1) % totalSegments;
@@ -1807,7 +1809,7 @@
                         p.starOffsetX = dx;
                         p.starOffsetY = dy;
                         this.pathogens.push(p);
-                    }
+                    });
                 }
                 else {
                     // Wave / Grid layout
@@ -1884,6 +1886,11 @@
                             if (this.boss.hp <= 0) {
                                 const points = this.boss.isOverlord ? 1000 : 500;
                                 this.score += Math.ceil(points * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                // Lyse any remaining minions
+                                this.pathogens.forEach(p => {
+                                    this.spawnSplatterParticles(p.x, p.y, p.color, 12, { gravity: 120, decay: 0.95 });
+                                });
+                                this.pathogens = [];
                                 this.boss = null;
                                 audio.lyse();
                             }
@@ -2529,6 +2536,11 @@
                                 if (this.boss.hp <= 0) {
                                     const points = this.boss.isOverlord ? 2000 : 1000;
                                     this.score += Math.ceil(points * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                    // Lyse any remaining minions
+                                    this.pathogens.forEach(p => {
+                                        this.spawnSplatterParticles(p.x, p.y, p.color, 12, { gravity: 120, decay: 0.95 });
+                                    });
+                                    this.pathogens = [];
                                     this.boss = null;
                                     audio.lyse();
                                     this.screenShake = Math.max(this.screenShake, 15);
@@ -2612,6 +2624,11 @@
                                 if (this.boss.hp <= 0) {
                                     const points = this.boss.isOverlord ? 2000 : 1000;
                                     this.score += Math.ceil(points * DIFF_CONFIGS[this.selectedDiff].scoreMult);
+                                    // Lyse any remaining minions
+                                    this.pathogens.forEach(p => {
+                                        this.spawnSplatterParticles(p.x, p.y, p.color, 12, { gravity: 120, decay: 0.95 });
+                                    });
+                                    this.pathogens = [];
                                     this.boss = null;
                                     audio.lyse();
                                 }

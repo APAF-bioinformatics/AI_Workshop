@@ -3,8 +3,19 @@
 These prompts add polish, complexity, or advanced features. They are ordered from lowest difficulty to highest difficulty, prioritizing immediate visual feedback ("fun juice") first before tackling advanced math and state machines.
 
 ---
+### PROMPT 1:  DESIGN SYSTEM & MOTION GUIDELINES (IMPECCABLE)
+To ensure the game feels premium and avoids the generic "AI slop" aesthetic, load and reference the custom `impeccable-design` skill in `.gemini/skills/impeccable-design/` during code generation:
+1. **Motion Design (`animate.md` / `npx impeccable animate`)**: Use natural easing curves (such as cubic-bezier deceleration: `cubic-bezier(0.22, 1, 0.36, 1)`) and precise timing (100–300ms for micro-interactions/transitions) for all animations. Avoid linear reveals or elastic bounces.
+2. **Color & Contrast (`colorize.md` / `npx impeccable colorize`)**: Use the perceptually uniform OKLCH color space for palette definitions. Apply tinted neutrals matching the primary brand hue rather than generic raw grays.
+3. **Reference URL**: See [impeccable](https://github.com/pbakaus/impeccable) in `references.md` for full design guidelines.
 
-### PROMPT 1: DOTTED MICROSCOPE GRID & BLURRED DRIFTING BACKGROUND
+* **Design Guidelines Map**:
+  - Motion Design: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (controls easing curves, timing, and physics velocity damping)
+  - Color & Contrast: [colorize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/colorize.md) (perceptually uniform OKLCH spaces and tinted neutrals)
+
+---
+
+### PROMPT 2: DOTTED MICROSCOPE GRID & BLURRED DRIFTING BACKGROUND
 **Difficulty: Easy | Fun: Medium**
 
 "Draw a faint static microscope grid on the 2D Canvas using TWO layers of dotted lines:
@@ -14,18 +25,28 @@ This creates a realistic reticle-style microscope eyepiece effect."
 
 "Implement a depth-of-field effect with a drifting background layer: floating out-of-focus red blood cells, platelets, and faint pathogens (spiked viruses, green rod bacteria, and branched fungi) drifting slowly downward at visible opacity (0.12 to 0.26). Render these background drifters with ctx.filter = 'blur(4px)' before drawing and reset to 'none' after, to simulate specimen that is outside the focal plane of the microscope objective."
 
+* **Design Guidelines Map**:
+  - Grid Spacing & Layers: [layout.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/layout.md) (rules for geometric alignment, screen layout structure, and padding grid columns)
+  - Colors & Transparencies: [colorize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/colorize.md) (rules for alpha values, layering colors, and contrast balance)
+  - Drifting Easing: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (rules for smooth, non-snapping drifting movement)
+  - Canvas Performance Optimization: [optimize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/optimize.md) (rules for minimizing filter overhead and layout recalculations)
+
 ---
 
-### PROMPT 2: DYNAMIC SCREEN SHAKE & EPISAFE LIFE-LOSS BLINK
+### PROMPT 3: DYNAMIC SCREEN SHAKE & EPISAFE LIFE-LOSS BLINK
 **Difficulty: Easy | Fun: High**
 
 "Implement a screen shake system that offsets the canvas context view matrix briefly on key events (player hit, pathogen lysis, boss alarms). Tracked via shakeTimer and shakeIntensity."
 
 "Implement a life-loss blink effect. When the player loses a life, trigger a soft red screen flash (blinkTimer = 0.55s). In the draw loop, compute alpha = sin(ratio * π) * 0.2 where ratio = blinkTimer / 0.55, and fill the canvas with rgba(220, 30, 30, alpha). This creates a smooth bell-curve fade that is visible but will NOT trigger photosensitive epilepsy."
 
+* **Design Guidelines Map**:
+  - Screen Shake "Juice": [delight.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/delight.md) (rules for satisfying visual responses and sensory feedback to user actions)
+  - Life-Loss Bell-Curve Fade: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (rules for mathematically modeled natural easing transitions over time)
+
 ---
 
-### PROMPT 3: FLUID BULLET PHYSICS
+### PROMPT 4: FLUID BULLET PHYSICS
 **Difficulty: Easy | Fun: Medium**
 
 "Implement fluid bullet physics. Both player bullets and enemy bullets must simulate movement through a viscous biological medium. Each bullet instance has:
@@ -35,26 +56,37 @@ This creates a realistic reticle-style microscope eyepiece effect."
 - driftPhase (random)
 In each update(dt), lateral drift = driftAmp * cos(age * driftFreq + driftPhase) * dt, added to x position. This makes bullets curve sinusoidally as if buffeted by cytoplasmic flow."
 
+* **Design Guidelines Map**:
+  - Cytoplasmic Sine Movement: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (rules for fluid, non-linear physical motion simulation)
+  - Update Optimization: [optimize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/optimize.md) (guidelines for low-overhead position updates of multiple entities)
+
 ---
 
-### PROMPT 4: LIGHTWEIGHT PARTICLE EMITTER SYSTEM
+### PROMPT 5: LIGHTWEIGHT PARTICLE EMITTER SYSTEM
 **Difficulty: Medium | Fun: High**
 
 "Create a lightweight particle engine handling custom position, count, spread angle, speed, color, velocity decay, gravity, and lifespan, allowing particles to fade out smoothly on destruction."
 
+* **Design Guidelines Map**:
+  - Particle Feedback & Juiciness: [delight.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/delight.md) (rules for rich procedural visual effects and particle burst feel)
+  - Memory & Draw Calls Optimization: [optimize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/optimize.md) (guidelines for recycling particle arrays and reducing allocations)
+
 ---
 
-### PROMPT 5: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
+### PROMPT 6: BOSS FSM ADVANCED STATES — SUMMON & SWEEP BEAM
 **Difficulty: Medium | Fun: High**
 
 "Extend the Mutagen Boss FSM with two additional states:
 - SWEEP_BEAM: sweeps side-to-side at 300px/s for 3.5s while streaming 5-bullet downward fan spreads (−90°, −45°, 0°, +45°, +90°) with 25% probability per frame. Then returns to PATROL.
-- SUMMON: spawns Virus minions (up to 8 on-screen), then returns to PATROL.
-Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM."
+- SUMMON: spawns Virus minions (up to 8 on-screen), then returns to PATROL. Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM. Ensure that when the boss is defeated, all remaining spawned minions in the pathogens list are also cleared/lysed immediately so that the stage can be successfully cleared without hanging."
+
+* **Design Guidelines Map**:
+  - FSM State Safeguards & Cleanups: [harden.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/harden.md) (rules for handling edge cases, state transitions, and memory leaks or hangs)
+  - Sweep Speeds & Motion: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (rules for timing and speed tuning during boss attacks)
 
 ---
 
-### PROMPT 6: CONGA LINE ENTRY FORMATION
+### PROMPT 7: CONGA LINE ENTRY FORMATION
 **Difficulty: Medium-High | Fun: High**
 
 "Implement a dynamic Conga Line entry formation when a stage is initialized:
@@ -64,9 +96,13 @@ Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM."
 - The player cell is fully active (unlocked) and can move/shoot pathogens mid-flight immediately upon stage start.
 - Keep collective grid movement (side-to-side drift and descent) inactive as long as any pathogen is still swooping or hasn't arrived at its home slot."
 
+* **Design Guidelines Map**:
+  - Entry Choreography & Swoop Paths: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (principles of stage staging, entrance motion, and path interpolation)
+  - Home Slots & Spacing Coordinates: [layout.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/layout.md) (structural arrangement rules for final grid layouts)
+
 ---
 
-### PROMPT 7: VARIANT PATHOGEN GRID FORMATIONS
+### PROMPT 8: VARIANT PATHOGEN GRID FORMATIONS
 **Difficulty: High | Fun: Very High**
 
 "Introduce variety to non-boss stages by implementing three distinct structural formations that cycle dynamically based on the stage number:
@@ -75,12 +111,21 @@ Update PATROL's random transition table to also include SUMMON and SWEEP_BEAM."
 - Formation 3 (Undulating Wave Shape): Arrange pathogens in a double-sine wave layout. As the formation drifts horizontally, each column undulates vertically based on elapsed time and its horizontal position (`y = base_y + 40 * sin(time * 3.0 + colIndex * 0.5)`), creating a fluid wave animation across the screen.
 - Each of these formations will still have to move down over time as per the rectangular formation."
 
+* **Design Guidelines Map**:
+  - Layout Geometry (Circles, Stars, Waves): [layout.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/layout.md) (rules for geometric alignment, centering, and symmetric spacing)
+  - Pulsation, Wave & Rotation Math: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (guidelines for fluid trigonometric motion design)
+
 ---
 
-### PROMPT 8: CUSTOM ENHANCED BOSS ENCOUNTERS
+### PROMPT 9: CUSTOM ENHANCED BOSS ENCOUNTERS
 **Difficulty: High | Fun: Very High**
 
 "Design and implement a custom advanced boss stage (e.g., at Stage 10) featuring a multi-phase boss ('Bio-Carrier Overlord'):
 - Phase 1 (Shielded): The boss is surrounded by 4 orbiting shield-generator nodes (each having 10 HP). The boss itself is immune to all damage until all 4 orbital nodes are destroyed.
 - Phase 2 (Enraged): Once the shield is broken, the boss glows deep magenta, increases its movement speed by 40%, and changes its firing pattern to fire rapid homing bullets targeting the player cell directly.
-- Add dynamic status text and particle bursts indicating shield collapse and phase transitions."
+- Add dynamic status text and particle bursts indicating shield collapse and phase transitions. Ensure all spawned minions are also cleared/lysed immediately on the boss's defeat to prevent game hangs."
+
+* **Design Guidelines Map**:
+  - Boss Phase State Transitions: [harden.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/harden.md) (safe multi-phase lifecycle management and crash prevention)
+  - Color Shift & Visual Feedback: [colorize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/colorize.md) (using contrast shifts and warning colors like magenta to represent state change)
+  - Feedback Banners & Particles: [delight.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/delight.md) (using text banners and dramatic particle bursts for dramatic stage progress)
