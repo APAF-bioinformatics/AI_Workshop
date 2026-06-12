@@ -39,17 +39,17 @@ Antigravity has already provisioned a helper skill in your local `.gemini/skills
 
 Complete the following programming challenges in `index.html`:
 
-### Task A: Smooth Player Movement (Ref: Prompt 5)
+### Task A: Smooth Player Movement 
 * **Location:** Locate the movement update code for the player cell.
 * **Problem:** The horizontal movement is very jerky, lacks fine control, and jumps position erratically.
 * **Goal:** Implement linear interpolation (lerp) or damping to make player movement smooth and viscous.
 
-### Task B: Complement Power-Up UI Alignment (Ref: Prompt 14)
+### Task B: Complement Power-Up UI Alignment 
 * **Location:** Locate the HUD / bottom HUD status panel rendering code.
 * **Problem:** The complement status text at the bottom overflows past the right edge of the canvas bounding box.
 * **Goal:** Recalculate alignments/margins to ensure the complement charge meter fits cleanly on all aspect ratios.
 
-### Task C: Layer-by-Layer Barrier Shield Damage (Ref: Prompts 4 & 13)
+### Task C: Layer-by-Layer Barrier Shield Damage 
 * **Location:** Identify the bullet-versus-barrier collision handler.
 * **Problem:** The barrier blocks currently take damage out of order (starting on row 2 instead of the edge closest to the shooter), and bullets can pass through early.
 * **Goal:**
@@ -57,20 +57,18 @@ Complete the following programming challenges in `index.html`:
   * Pathogen bullets must damage the top-most row first (row 1 down to row 5).
   * Projectiles should **never** pass through a barrier column to hit cells behind it if active blocks still remain in that column.
 
-### Task D: Resolve Boss Stage Hang & Add Shortcuts (Ref: Prompts 11 & 21)
+### Task D: Resolve Boss Stage Hang & Add Shortcuts 
 * **Location:** Locate the stage advancement loop and the boss spawn triggers.
 * **Goal:**
   * **Fix Boss Freeze:** Address the stage freeze that happens when spawning the stage 5 boss.
   * **Add Test Shortcut:** Bind the `8` key to immediately jump to the next boss wave (Stage 5, 10, 15, etc.) for testing.
   * **Clean Up:** Once boss stages are fully tested and verified, remove the shortcut key event listener.
 
-### Task E: Cell Selection Unlock Logic (Ref: Prompt 15)
+### Task E: Cell Selection Unlock Logic 
 * **Location:** Locate the Lineage Selector screen render/event functions.
 * **Goal:** Lock the **Natural Killer** and **Neutrophil** cell lineages initially. Enable selection only when the player's persistent high score exceeds the unlock threshold.
 
----
-
-## 5. Testing Notes: Managing Cell Unlocks & High Scores
+#### Testing Notes: Managing Cell Unlocks & High Scores
 
 Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to manage local storage:
 
@@ -92,9 +90,9 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-## 6. Optional Advanced Polish & Extension Tasks
+## 5. Optional Advanced Polish & Extension Tasks
 
-### Prompt 16: Design System & Motion Guidelines (Impeccable)
+### Task F: Design System & Motion Guidelines (Impeccable)
 > To ensure the game feels premium and avoids the generic "AI slop" aesthetic, load and reference the custom `impeccable-design` skill in `.gemini/skills/impeccable-design/` during code generation:
 > 1. **Motion Design:** Use natural easing curves (such as cubic-bezier deceleration: `cubic-bezier(0.22, 1, 0.36, 1)`) and precise timing (100–300ms for micro-interactions/transitions) for all animations. Avoid linear reveals or elastic bounces.
 > 2. **Color & Contrast:** Use the perceptually uniform OKLCH color space for palette definitions. Apply tinted neutrals matching the primary brand hue rather than generic raw grays.
@@ -105,7 +103,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 17: Dotted Microscope Grid & Blurred Drifting Background
+### Task G: Dotted Microscope Grid & Blurred Drifting Background
 > Draw a faint static microscope grid on the 2D Canvas using TWO layers of dotted lines:
 > - Primary grid (100px spacing): `rgba(0, 242, 254, 0.22)`, dash pattern `[3, 15]`.
 > - Secondary finer grid (50px spacing): `rgba(0, 242, 254, 0.08)`, dash pattern `[2, 24]`.
@@ -121,7 +119,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 18: Dynamic Screen Shake & Episafe Life-Loss Blink
+### Task H: Dynamic Screen Shake & Episafe Life-Loss Blink
 > Implement a screen shake system that offsets the canvas context view matrix briefly on key events (player hit, pathogen lysis, boss alarms). Tracked via `shakeTimer` and `shakeIntensity`.
 >
 > Implement a life-loss blink effect. When the player loses a life, trigger a soft red screen flash (`blinkTimer = 0.55s`). In the draw loop, compute `alpha = sin(ratio * π) * 0.2` where `ratio = blinkTimer / 0.55`, and fill the canvas with `rgba(220, 30, 30, alpha)`. This creates a smooth bell-curve fade that is visible but will NOT trigger photosensitive epilepsy.
@@ -132,7 +130,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 19: Fluid Bullet Physics
+### Task I: Fluid Bullet Physics
 > Implement fluid bullet physics. Both player bullets and enemy bullets must simulate movement through a viscous biological medium. Each bullet instance has:
 > - `age` (seconds elapsed)
 > - `driftAmp` (random 18–32px for player, 12–22px for enemy)
@@ -146,7 +144,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 20: Lightweight Particle Emitter System
+### Task J: Lightweight Particle Emitter System
 > Create a lightweight particle engine handling custom position, count, spread angle, speed, color, velocity decay, gravity, and lifespan, allowing particles to fade out smoothly on destruction.
 >
 > **Design Guidelines Map:**
@@ -155,7 +153,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 21: Boss FSM Advanced States — Summon & Sweep Beam
+### Task K: Boss FSM Advanced States — Summon & Sweep Beam
 > Extend the Mutagen Boss FSM with two additional states:
 > - `SWEEP_BEAM`: sweeps side-to-side at 300px/s for 3.5s while streaming 5-bullet downward fan spreads (−90°, −45°, 0°, +45°, +90°) with 25% probability per frame. Then returns to `PATROL`.
 > - `SUMMON`: spawns Virus minions (up to 8 on-screen), then returns to `PATROL`. Update PATROL's random transition table to also include `SUMMON` and `SWEEP_BEAM`. Ensure that when the boss is defeated, all remaining spawned minions in the pathogens list are also cleared/lysed immediately so that the stage can be successfully cleared without hanging.
@@ -166,7 +164,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 22: Conga Line Entry Formation
+### Task L: Conga Line Entry Formation
 > Implement a dynamic Conga Line entry formation when a stage is initialized:
 > - Group and order the pathogens sequentially by columns to form a single-file queue. The center columns must fill first, ordering the columns from center to outward: Columns 3 and 4 first (top-to-bottom), then Columns 2 and 5, then Columns 1 and 6, and finally Columns 0 and 7.
 > - Pathogens must enter the screen in a closely spaced, flowing train (one after another); a pathogen begins its swoop flight when the previous pathogen in the queue is slightly ahead on the flight path (e.g., when the predecessor has reached 8% of its flight completion), allowing multiple pathogens to follow each other mid-flight along the curve.
@@ -180,20 +178,7 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 
 ---
 
-### Prompt 23: Variant Pathogen Grid Formations
-> Introduce variety to non-boss stages by implementing three distinct structural formations that cycle dynamically based on the stage number:
-> - **Formation 1 (Alternating Concentric Circles):** Arrange pathogens in three concentric circles (outer radius 180px, middle 120px, inner 60px) rotating around a central point (450, 250). Symmetrically alternate rotation directions (e.g., outer and inner circles rotate clockwise, middle rotates counter-clockwise) at a constant angular speed of 0.5 rad/s.
-> - **Formation 2 (Pulsating Star Shape):** Arrange pathogens in a 5-pointed star layout. The entire formation drifts side-to-side while continuously pulsating in size (scaling its coordinates dynamically between 85% and 115% of its native size using a sine-wave function: `scale = 1.0 + 0.15 * sin(time * 2.0)`).
-> - **Formation 3 (Undulating Wave Shape):** Arrange pathogens in a double-sine wave layout. As the formation drifts horizontally, each column undulates vertically based on elapsed time and its horizontal position (`y = base_y + 40 * sin(time * 3.0 + colIndex * 0.5)`), creating a fluid wave animation across the screen.
-> - Each of these formations will still have to move down over time as per the rectangular formation.
->
-> **Design Guidelines Map:**
-> - Layout Geometry (Circles, Stars, Waves): [layout.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/layout.md) (rules for geometric alignment, centering, and symmetric spacing)
-> - Pulsation, Wave & Rotation Math: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (guidelines for fluid trigonometric motion design)
-
----
-
-### Prompt 24: Custom Enhanced Boss Encounters
+### Task M: Custom Enhanced Boss Encounters
 > Design and implement a custom advanced boss stage (e.g., at Stage 10) featuring a multi-phase boss ('Bio-Carrier Overlord'):
 > - **Phase 1 (Shielded):** The boss is surrounded by 4 orbiting shield-generator nodes (each having 10 HP). The boss itself is immune to all damage until all 4 orbital nodes are destroyed.
 > - **Phase 2 (Enraged):** Once the shield is broken, the boss glows deep magenta, increases its movement speed by 40%, and changes its firing pattern to fire rapid homing bullets targeting the player cell directly.
@@ -203,6 +188,19 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 > - Boss Phase State Transitions: [harden.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/harden.md) (safe multi-phase lifecycle management and crash prevention)
 > - Color Shift & Visual Feedback: [colorize.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/colorize.md) (using contrast shifts and warning colors like magenta to represent state change)
 > - Feedback Banners & Particles: [delight.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/delight.md) (using text banners and dramatic particle bursts for dramatic stage progress)
+
+---
+
+### Task N: Variant Pathogen Grid Formations
+> Introduce variety to non-boss stages by implementing three distinct structural formations that cycle dynamically based on the stage number:
+> - **Formation 1 (Alternating Concentric Circles):** Arrange pathogens in three concentric circles (outer radius 180px, middle 120px, inner 60px) rotating around a central point (450, 250). Symmetrically alternate rotation directions (e.g., outer and inner circles rotate clockwise, middle rotates counter-clockwise) at a constant angular speed of 0.5 rad/s.
+> - **Formation 2 (Pulsating Star Shape):** Arrange pathogens in a 5-pointed star layout. The entire formation drifts side-to-side while continuously pulsating in size (scaling its coordinates dynamically between 85% and 115% of its native size using a sine-wave function: `scale = 1.0 + 0.15 * sin(time * 2.0)`).
+> - **Formation 3 (Undulating Wave Shape):** Arrange pathogens in a double-sine wave layout. As the formation drifts horizontally, each column undulates vertically based on elapsed time and its horizontal position (`y = base_y + 40 * sin(time * 3.0 + colIndex * 0.5)`), creating a fluid wave animation across the screen.
+> - Each of these formations will still have to move down over time as per the rectangular formation.
+>
+> **Design Guidelines Map:**
+> - Layout Geometry (Circles, Stars, Waves): [layout.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/layout.md) (rules for geometric alignment, centering, and symmetric spacing)
+> - Pulsation, Wave & Rotation Math: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (guidelines for fluid trigonometric motion design)
 
 ---
 
