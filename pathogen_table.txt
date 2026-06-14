@@ -1,0 +1,100 @@
+# Pathogen Size and Shape Reference Table
+
+This reference table lists various pathogens, focusing on viruses and single-celled organisms (bacteria, archaea, and unicellular fungi). It ranges from some of the smallest known viruses to giant viruses (like Mimivirus and Pandoravirus) that equal or exceed the size of small cellular life.
+
+The table is organized by biological group, with species sorted by typical size (ascending) within each group.
+
+---
+
+## 1. VIRUSES
+| Pathogen Name | Shape | Typical Dimensions | Description / Notes |
+| :--- | :--- | :--- | :--- |
+| Parvovirus (e.g., Canine Parvovirus) | Icosahedral | 18 - 26 nm | One of the smallest non-enveloped DNA viruses. |
+| Poliovirus | Icosahedral | 30 nm | Non-enveloped RNA enterovirus. |
+| Adenovirus | Icosahedral with protruding fibers | 70 - 90 nm | Non-enveloped dsDNA virus causing respiratory infections. |
+| Influenza Virus | Spherical / Pleomorphic (enveloped) | 80 - 120 nm | Enveloped segmented RNA virus. |
+| Human Immunodeficiency Virus (HIV) | Spherical (enveloped) | 120 nm | Enveloped retrovirus with a conical capsid core. |
+| SARS-CoV-2 | Spherical / Pleomorphic with spikes | 60 - 140 nm | Enveloped (+)ssRNA virus causing COVID-19. |
+| Bacteriophage T4 | Complex "Tadpole" (icosahedral head, helical tail) | ~200 nm (length), ~90 nm (head width) | T4 myovirus infecting Escherichia coli. |
+| Ebola Virus | Filamentous / Helical (often curved/looped) | 80 nm (diameter) x up to 1,000 - 1,400 nm (length) | Enveloped filovirus causing severe hemorrhagic fever. |
+| Mimivirus (A. polyphaga mimivirus) | Pseudo-icosahedral with dense surface fibers | 400 - 500 nm (capsid), up to 750 nm with fibers | Giant dsDNA virus. Larger than some small bacteria. |
+| Megavirus (Megavirus chilensis) | Pseudo-icosahedral with surface fibers | 440 nm (capsid), up to 680 nm with fibers | Giant dsDNA virus related to Mimiviridae. |
+| Pandoravirus (e.g., P. salinus) | Ovoid / Flask-shaped with apical pore | ~1,000 nm (1.0 μm) length, 500 nm (0.5 μm) width | Giant virus with the largest genome (~2.5 Mbp). Extends past some eukaryotic cells. |
+
+## 2. BACTERIA (Single-cell)
+| Pathogen Name | Shape | Typical Dimensions | Description / Notes |
+| :--- | :--- | :--- | :--- |
+| Mycoplasma pneumoniae | Pleomorphic (lacks cell wall) | 100 - 200 nm (diameter) x 1.0 - 2.0 μm (length) | Tiny cellular pathogen, smaller than giant viruses. |
+| Staphylococcus aureus | Spherical (coccus), forms grape-like clusters | 0.5 - 1.0 μm | Gram-positive coccus, causes skin/systemic infections. |
+| Streptococcus pneumoniae | Lancet-shaped coccus, in pairs/chains | 0.5 - 1.25 μm | Gram-positive diplococcus, causes pneumonia. |
+| Escherichia coli | Rod-shaped (bacillus) | 1.0 - 2.0 μm (length) x 0.5 μm (diameter) | Gram-negative model organism and opportunistic pathogen. |
+| Vibrio cholerae | Comma-shaped (vibrio), polar flagellum | 1.5 - 3.0 μm (length) x 0.5 - 0.8 μm (width) | Gram-negative bacterium causing cholera. |
+| Bacillus anthracis | Large rod-shaped (bacillus), square ends, chains | 3.0 - 5.0 μm (length) x 1.0 - 1.2 μm (width) | Gram-positive spore-forming pathogen causing anthrax. |
+| Treponema pallidum | Helical spiral (spirochete) | 6.0 - 20.0 μm (length) x 0.1 - 0.2 μm (width) | Extremely thin, flexible spiral bacterium causing syphilis. |
+
+## 3. ARCHAEA (Single-cell)
+| Pathogen Name | Shape | Typical Dimensions | Description / Notes |
+| :--- | :--- | :--- | :--- |
+| Nanoarchaeum equitans | Spherical | ~400 nm (0.4 μm) | Ultra-small hyperthermophilic obligate symbiont/parasite of Ignicoccus. |
+| Sulfolobus acidocaldarius | Irregularly spherical and lobed | 0.8 - 1.0 μm | Thermoacidophilic archaeon found in acidic hot springs. |
+| Methanobrevibacter smithii | Rod-shaped or coccobacillus | 1.0 - 2.0 μm (length) x 0.8 μm (width) | Dominant archaeon in the human gut microbiome; methanogen. |
+| Haloquadratum walsbyi | Square, flat, sheet-like | 2.0 - 5.0 μm (width) x ~0.1 μm (thickness) | Halophilic archaeon with unique square shape to maximize surface-to-volume ratio. |
+
+## 4. FUNGI (Single-cell / Yeasts)
+| Pathogen Name | Shape | Typical Dimensions | Description / Notes |
+| :--- | :--- | :--- | :--- |
+| Candida albicans (Yeast form) | Oval / Ovoid yeast | 2.0 - 6.0 μm | Opportunistic pathogen; can transition to filamentous hyphae. |
+| Saccharomyces cerevisiae | Spherical / Oval, reproduces by budding | 3.0 - 10.0 μm | Brewer's/model yeast; occasionally opportunistic in immunocompromised. |
+| Cryptococcus neoformans | Spherical yeast with thick capsule | 4.0 - 10.0 μm (excluding capsule) | Capsulated yeast causing cryptococcal meningitis. |
+| Pneumocystis jirovecii (Cyst form) | Spherical / Oval | 5.0 - 8.0 μm (cyst), 1.5 - 5.0 μm (trophic) | Yeast-like fungus causing PCP pneumonia. |
+
+## 5. GAME GRAPHICS & BEHAVIOR SPECIFICATION (IMMUNITY PROTOCOL)
+
+To integrate these pathogens into the **Immunity Protocol** 2D HTML5 Canvas rendering loop, we map their biological properties to neon-themed color palettes, visual scales (sizes), drawing algorithms, and gameplay behaviors.
+
+### A. Viruses
+| Pathogen / Game ID | Color Palette (Hex/HSL) | Canvas Draw Size | Canvas Drawing Logic | Gameplay Behavior & Firing Patterns |
+| :--- | :--- | :--- | :--- | :--- |
+| **Parvovirus** (`parvovirus`) | `#9d4edd` (HSL 270, 75%, 60%) | `size = 14` | Draw a simple, sharp 6-sided polygon (icosahedron) with a solid outline. | High-frequency micro-vibration. Low HP (1 HP). Fires tiny, rapid purple needle bullets. |
+| **Poliovirus** (`poliovirus`) | `#ff007f` (HSL 330, 100%, 50%) | `size = 16` | Draw a sharp 12-sided polygon representing a smooth spherical icosahedral capsid. | Rapid pulsing scale. Low HP (1 HP). Moves in quick, sudden horizontal dashes. |
+| **Adenovirus** (`adenovirus`) | `#00f0ff` (HSL 184, 100%, 50%) | `size = 19` | 20-sided polygon core with 12 radiating spike fibers ending in tiny bright receptor knobs. | Spikes rotate slowly clockwise. Medium HP (2 HP). Fires slow, high-damage cyan plasma rings. |
+| **Influenza Virus** (`influenza`) | `#ff4d4d` (HSL 0, 100%, 65%) | `size = 21` | Spherical core surrounded by a wobbly lipid envelope and a high density of vibrating outer spike nodes. | Medium HP (2 HP). Drops slow-drifting red chemical clouds that cause player cell deceleration. |
+| **HIV** (`hiv`) | `#d90429` (HSL 350, 96%, 43%) | `size = 22` | Spherical envelope containing a visible dark conical inner core (capsid) that oscillates as a sine wave. | Medium HP (2 HP). Steals power-up energy. Fires homing retroviral bullets that track player cell. |
+| **SARS-CoV-2** (`sars_cov_2`) | `#ff7b00` (HSL 29, 100%, 50%) | `size = 24` | Spherical membrane surrounded by a crown-like (corona) ring of 10 vibrating triangular spikes. | Medium-High HP (3 HP). Fires 3-bullet spreads expanding outward in a fan at regular intervals. |
+| **Bacteriophage T4** (`bacteriophage_t4`) | `#06d6a0` (HSL 164, 85%, 48%) | `size = 26` | Faceted hexagonal prism head, thin cylindrical tail tube, and 6 thin tail fibers stretching downwards. | High HP (3 HP). Jumps downward to anchor on active barriers, draining barrier HP. Explodes into 3 particles. |
+| **Ebola Virus** (`ebola`) | `#9b2226` (HSL 358, 64%, 37%) | `size = 28` | Long, flexible worm-like tube curling dynamically in a snake-like path using a time-based sine wave. | High HP (3 HP). Snakes diagonally down screen. Firing leaves behind a trail of static acidic droplets. |
+| **Mimivirus** (`mimivirus`) | `#4361ee` (HSL 230, 85%, 60%) | `size = 38` | Large icosahedral core with a thick, fuzzy outer layer of dense filamentous fibers that wave like seaweed. | Mini-boss (8 HP). Fires a continuous vertical laser-like beam of viral particles at player coordinates. |
+| **Megavirus** (`megavirus`) | `#7209b7` (HSL 276, 91%, 38%) | `size = 40` | Massive icosahedral capsid with asymmetrical outer "hair" fiber coatings and a glowing circular nucleus. | Mini-boss (10 HP). Drops mini-pods that detonate into radial 8-bullet spreads when hit by player. |
+| **Pandoravirus** (`pandoravirus`) | `#3a0ca3` (HSL 258, 86%, 34%) | `size = 50` | Colossal flask/ovoid shape with thick double-membrane and a glowing apical pore at the front tip. | Sub-boss (25 HP). Immunized to normal bullets (only takes damage from power-ups). Fires radial shockwaves. |
+
+### B. Bacteria (Single-cell)
+| Pathogen / Game ID | Color Palette (Hex/HSL) | Canvas Draw Size | Canvas Drawing Logic | Gameplay Behavior & Firing Patterns |
+| :--- | :--- | :--- | :--- | :--- |
+| **Mycoplasma pneumoniae** (`mycoplasma`) | `#ccff33` (HSL 75, 100%, 60%) | `size = 15` | Irregular, wall-less pleomorphic cell membrane that continuously deforms via random walks. | Low HP (1 HP). Glides slowly horizontally. Fires tiny, slow acid-green droplets. |
+| **Staphylococcus aureus** (`staph_aureus`) | `#ffea00` (HSL 55, 100%, 50%) | `size = 18` | Spherical coccus. Automatically groups with adjacent cells into grape-like clusters (groups of 3-5). | Medium HP (2 HP). Shared health pool when clustered. Fires quick yellow electrical arcs. |
+| **Streptococcus pneumoniae** (`strep_pneumo`) | `#00a896` (HSL 174, 100%, 33%) | `size = 20` | Lancet-shaped coccus, typically rendered in pairs (diplococci) sharing a single outer capsule shell. | Medium HP (2 HP). Splitting behavior: when hit, separates into two independent single cells (1 HP each). |
+| **Escherichia coli** (`e_coli`) | `#39ff14` (HSL 109, 100%, 54%) | `size = 22` | Rod-shaped (bacillus) capsule with 4 long flagellar tails waving in high-frequency sine waves. | Medium HP (2 HP). Moves forward in sudden rapid bursts. Fires green rod-shaped bullets. |
+| **Vibrio cholerae** (`vibrio`) | `#52b788` (HSL 152, 43%, 52%) | `size = 21` | Comma-shaped (vibrio) body with a single long polar flagellum rotating like a propeller. | Medium HP (2 HP). Glides in a spiral/corkscrew motion. Fires water-like bubble projectiles. |
+| **Bacillus anthracis** (`anthrax`) | `#1b4332` (HSL 154, 42%, 18%) | `size = 26` | Rectangular bacillus with squared ends, linked in chain formations. Thick protective cell outline. | High HP (4 HP). Highly armored (absorbs first 2 bullet hits). Drops spores when destroyed. |
+| **Treponema pallidum** (`treponema`) | `#d8f3dc` (HSL 130, 47%, 90%) | `size = 30` | Long, tightly coiled spiral (spirochete) rotating continuously around its longitudinal axis. | Medium HP (2 HP). Drifts back and forth like a spring. High evasion due to thin visual profile. |
+
+### C. Archaea (Single-cell)
+| Pathogen / Game ID | Color Palette (Hex/HSL) | Canvas Draw Size | Canvas Drawing Logic | Gameplay Behavior & Firing Patterns |
+| :--- | :--- | :--- | :--- | :--- |
+| **Nanoarchaeum equitans** (`nanoarchaeum`) | `#e05780` (HSL 342, 70%, 61%) | `size = 12` | Tiny sphere attached to the back of a larger host archaeon cell. | Low HP (1 HP). Buffs the host cell's fire rate. Flies off erratically if host is destroyed. |
+| **Sulfolobus acidocaldarius** (`sulfolobus`) | `#f95738` (HSL 10, 95%, 60%) | `size = 18` | Irregularly spherical, lobed cell body that bubbles and shifts constantly. | Medium HP (2 HP). Fires acidic fireballs that leave temporary burning damage-over-time zones. |
+| **Methanobrevibacter smithii** (`methanobrevibacter`) | `#b5838d` (HSL 346, 26%, 62%) | `size = 20` | Oval coccobacillus with a thick, dense outer cell envelope that glows faintly. | Medium HP (2 HP). Emits slow-moving methane gas clouds that shield nearby pathogens from bullets. |
+| **Haloquadratum walsbyi** (`haloquadratum`) | `#ff0054` (HSL 340, 100%, 50%) | `size = 23` | Perfectly square, extremely flat sheet (box) that floats like a tile, glowing along its outer edges. | Medium HP (2 HP). Rotates 90 degrees. Absorbs front hits, vulnerable only on edges. |
+
+### D. Fungi (Single-cell / Yeasts)
+| Pathogen / Game ID | Color Palette (Hex/HSL) | Canvas Draw Size | Canvas Drawing Logic | Gameplay Behavior & Firing Patterns |
+| :--- | :--- | :--- | :--- | :--- |
+| **Candida albicans** (`candida`) | `#eaf4f4` (HSL 180, 22%, 94%) | `size = 25` | Ovoid yeast cell body with smaller budding daughter cells branching off it. | High HP (3 HP). Spawns tiny budding clones over time. Transition to hyphae when HP is low. |
+| **Saccharomyces cerevisiae** (`yeast`) | `#fcd5a1` (HSL 34, 94%, 81%) | `size = 28` | Large round yeast body with circular scars from prior budding events. | High HP (4 HP). Passive "tank" cell. High health pool, drops rare power-ups on lysis. |
+| **Cryptococcus neoformans** (`cryptococcus`) | `#3c096c` (HSL 271, 85%, 23%) | `size = 32` | Spherical yeast core surrounded by a massive, semi-transparent glowing circular halo capsule. | Shielded cell (5 HP). Capsule acts as a shield that must be destroyed before core takes damage. |
+| **Pneumocystis jirovecii** (`pneumocystis`) | `#b388ff` (HSL 260, 100%, 76%) | `size = 27` | Thick double-walled cyst enclosing up to 8 distinct internal round spores. | High HP (4 HP). Upon death, splits and releases 6-8 tiny trophic forms (1 HP each) that swarm downward. |
+
+---
+
+<!-- APAF Bioinformatics | pathogen_table.txt | Approved | 2026-06-14 -->
+

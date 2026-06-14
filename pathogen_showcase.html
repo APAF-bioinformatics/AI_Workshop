@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immunity Protocol - Pathogen Codex</title>
+    <meta name="description" content="An interactive database of biological pathogens, sizing, and game behaviors for the Immunity Protocol project.">
+    <!-- Google Fonts: Outfit & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Custom Properties & Reset */
+        :root {
+            --bg-dark: #06060c;
+            --bg-grid: rgba(0, 243, 255, 0.03);
+            --bg-card: rgba(18, 18, 35, 0.65);
+            --bg-modal: rgba(12, 12, 24, 0.95);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f0f2f5;
+            --text-secondary: #9aa0a6;
+            
+            /* Neon Accent Colors */
+            --accent-cyan: #00f3ff;
+            --accent-magenta: #ff00ff;
+            --accent-green: #39ff14;
+            --accent-amber: #ffaa00;
+            --accent-purple: #7209b7;
+            
+            /* Taxonomy Theme Colors */
+            --color-virus: #ff3333;
+            --color-bacteria: #39ff14;
+            --color-archaea: #ff00ff;
+            --color-fungi: #b388ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Scrollbar customization */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 10, 20, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 243, 255, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-cyan);
+        }
+
+        /* Layout Container */
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styles */
+        header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -0.05rem;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 1.5rem;
+        }
+
+        /* Control Panel (Search, Filters, Sort) */
+        .controls {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 1.25rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            min-width: 280px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: rgba(10, 10, 20, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.25);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1.1rem;
+            height: 1.1rem;
+            fill: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.6rem 1.1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-btn.active[data-type="all"] { border-color: var(--text-primary); color: #fff; background: rgba(255,255,255,0.1); }
+        .filter-btn.active[data-type="Virus"] { border-color: var(--color-virus); color: var(--color-virus); background: rgba(255, 51, 51, 0.1); }
+        .filter-btn.active[data-type="Bacteria"] { border-color: var(--color-bacteria); color: var(--color-bacteria); background: rgba(57, 255, 20, 0.1); }
+        .filter-btn.active[data-type="Archaea"] { border-color: var(--color-archaea); color: var(--color-archaea); background: rgba(255, 0, 255, 0.1); }
+        .filter-btn.active[data-type="Fungi"] { border-color: var(--color-fungi); color: var(--color-fungi); background: rgba(179, 136, 255, 0.1); }
+
+        .sort-select {
+            padding: 0.6rem 1.1rem;
+            background: rgba(10, 10, 20, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .sort-select:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        /* Grid Layout */
+        .codex-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Card Styles */
+        .pathogen-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .pathogen-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--accent-color, var(--text-secondary));
+            opacity: 0.8;
+        }
+
+        .pathogen-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent-color, var(--accent-cyan));
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--accent-color-rgb, 0, 243, 255), 0.15);
+        }
+
+        .canvas-container {
+            width: 150px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .canvas-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .pathogen-type {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent-color, var(--text-secondary));
+        }
+
+        .pathogen-name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.25rem;
+            color: #fff;
+        }
+
+        .pathogen-sci {
+            font-size: 0.85rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Stats Bar inside Card */
+        .card-stats {
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 0.85rem;
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Detailed Overlay / Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 243, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 2.5rem;
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 2.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .modal-body {
+                grid-template-columns: 1fr;
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Large Interactive Panel */
+        .visualizer-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 18px;
+            padding: 1.5rem;
+            justify-content: center;
+            position: relative;
+        }
+
+        .detail-canvas-container {
+            width: 260px;
+            height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+        }
+
+        .detail-canvas-container canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Interactive Buttons */
+        .interactive-buttons {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            flex-grow: 1;
+            padding: 0.65rem 0.85rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.04rem;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .action-btn.damage-btn:hover {
+            background: rgba(255, 51, 51, 0.15);
+            border-color: #ff3333;
+            color: #ff3333;
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.15);
+        }
+
+        .action-btn.lysis-btn:hover {
+            background: rgba(255, 0, 255, 0.15);
+            border-color: #ff00ff;
+            color: #ff00ff;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.15);
+        }
+
+
+
+        /* Data Details Column */
+        .details-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .detail-sci-name {
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-top: 0.15rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-stat {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+        }
+
+        .detail-stat-val {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 0.15rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .threat-stars {
+            color: var(--accent-color, var(--accent-cyan));
+            letter-spacing: 0.1rem;
+        }
+
+        .detail-description {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .game-log-panel {
+            background: rgba(10, 10, 20, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-log-title {
+            color: var(--accent-color, var(--accent-cyan));
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.08rem;
+        }
+
+        .game-log-text {
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: auto;
+        }
+
+        footer p {
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>PATHOGEN CODEX</h1>
+        <p class="subtitle">Immunity Protocol Interactive Visual Database. Browse single-cell pathogens and viruses, inspect rendering shapes, and simulate gameplay behaviors.</p>
+    </header>
+
+    <div class="controls">
+        <div class="search-box">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="searchInput" placeholder="Search pathogen name, shape, size or properties...">
+        </div>
+        <div class="filter-tabs" id="filterTabs">
+            <button class="filter-btn active" data-type="all">All</button>
+            <button class="filter-btn" data-type="Virus">Viruses</button>
+            <button class="filter-btn" data-type="Bacteria">Bacteria</button>
+            <button class="filter-btn" data-type="Archaea">Archaea</button>
+            <button class="filter-btn" data-type="Fungi">Fungi</button>
+        </div>
+        <select class="sort-select" id="sortSelect">
+            <option value="default">Default Sort</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="size-asc">Visual Size (Smallest)</option>
+            <option value="size-desc">Visual Size (Largest)</option>
+            <option value="hp-desc">Threat (Highest HP)</option>
+        </select>
+    </div>
+
+    <main class="codex-grid" id="codexGrid">
+        <!-- Cards injected dynamically via JS -->
+    </main>
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+        <button class="close-btn" id="modalClose">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        <div class="modal-body" id="modalBody">
+            <!-- Details injected dynamically via JS -->
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="container" style="padding: 0;">
+        <p>© 2026 Immunity Protocol Development Team.</p>
+        <p>APAF Bioinformatics | pathogen_showcase.html | Approved | 2026-06-14</p>
+    </div>
+</footer>
+
+<script>
+    // --- PATHOGEN DATASET ---
+    const PATHOGENS = [
+        // --- VIRUSES ---
+        {
+            id: "parvovirus",
+            name: "Parvovirus",
+            scientific: "Canine Parvovirus",
+            type: "Virus",
+            shape: "Icosahedral",
+            sizeReal: "18 - 26 nm",
+            sizeDraw: 14,
+            hp: 1,
+            threat: 1,
+            color: "#9d4edd",
+            colorRgb: "157, 78, 237",
+            desc: "One of the smallest known non-enveloped DNA viruses, possessing an extremely compact icosahedral capsid geometry.",
+            behavior: "High-frequency micro-vibration. Low health pools (1 HP) makes it susceptible to rapid lysis. In-game, it fires needle-thin purple bullets in fast swarms.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx + Math.sin(pulse * 24) * 1.5, cy + Math.cos(pulse * 24) * 1.5);
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#9d4edd';
+                ctx.fillStyle = 'rgba(157, 78, 237, 0.15)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                Array.from({ length: 6 }).forEach((_, i) => {
+                    const angle = (i / 6) * Math.PI * 2 + pulse * 0.1;
+                    const px = Math.cos(angle) * size;
+                    const py = Math.sin(angle) * size;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = hitFlash ? '#ffffff' : '#c77dff';
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        },
+        {
+            id: "poliovirus",
+            name: "Poliovirus",
+            scientific: "Enterovirus C (Poliovirus)",
+            type: "Virus",
+            shape: "Icosahedral",
+            sizeReal: "30 nm",
+            sizeDraw: 16,
+            hp: 1,
+            threat: 1,
+            color: "#ff007f",
+            colorRgb: "255, 0, 127",
+            desc: "A small, non-enveloped positive-sense single-stranded RNA virus. Captures a clean, symmetrically packed icosahedron.",
+            behavior: "Pulsates rapidly with high-frequency expansions and contractions. Moves in quick, sudden horizontal dashes in the grid, firing simple spherical rounds.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                const scale = 1.0 + Math.sin(pulse * 8) * 0.08;
+                ctx.translate(cx, cy);
+                ctx.scale(scale, scale);
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ff007f';
+                ctx.fillStyle = 'rgba(255, 0, 127, 0.12)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                Array.from({ length: 12 }).forEach((_, i) => {
+                    const angle = (i / 12) * Math.PI * 2;
+                    const px = Math.cos(angle) * size;
+                    const py = Math.sin(angle) * size;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(255, 0, 127, 0.4)';
+                ctx.beginPath();
+                Array.from({ length: 6 }).forEach((_, i) => {
+                    const angle = (i / 6) * Math.PI * 2 + Math.PI/6;
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(angle) * size, Math.sin(angle) * size);
+                });
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "adenovirus",
+            name: "Adenovirus",
+            scientific: "Human Adenovirus C",
+            type: "Virus",
+            shape: "Icosahedral with protruding fibers",
+            sizeReal: "70 - 90 nm",
+            sizeDraw: 19,
+            hp: 2,
+            threat: 2,
+            color: "#00f0ff",
+            colorRgb: "0, 240, 255",
+            desc: "Medium-sized non-enveloped dsDNA virus containing structural penton bases that extend long, thin protein fibers.",
+            behavior: "Fiber spikes rotate slowly clockwise around the central body. Possesses moderate durability (2 HP) and shoots high-velocity cyan plasma rings.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                const rot = pulse * 0.4;
+                
+                // Draw fibers
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(0, 240, 255, 0.6)';
+                ctx.lineWidth = 2;
+                Array.from({ length: 12 }).forEach((_, i) => {
+                    const angle = (i / 12) * Math.PI * 2 + rot;
+                    const fLen = size * 1.5 + Math.sin(pulse * 6 + i) * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(angle) * fLen, Math.sin(angle) * fLen);
+                    ctx.stroke();
+                    
+                    // Knob tips
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle) * fLen, Math.sin(angle) * fLen, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = hitFlash ? '#ffffff' : '#00f0ff';
+                    ctx.fill();
+                });
+
+                // Core icosahedron
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#00f0ff';
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.2)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                Array.from({ length: 20 }).forEach((_, i) => {
+                    const angle = (i / 20) * Math.PI * 2 + rot;
+                    const px = Math.cos(angle) * size;
+                    const py = Math.sin(angle) * size;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "influenza",
+            name: "Influenza Virus",
+            scientific: "Influenza A Virus",
+            type: "Virus",
+            shape: "Spherical (enveloped)",
+            sizeReal: "80 - 120 nm",
+            sizeDraw: 21,
+            hp: 2,
+            threat: 2,
+            color: "#ff4d4d",
+            colorRgb: "255, 77, 77",
+            desc: "Enveloped negative-sense ssRNA virus with a wobbly lipid bilayer spiked with Hemagglutinin and Neuraminidase glycoprotein clusters.",
+            behavior: "Drops slow-drifting red chemical clouds (viral shedding zones) that slow down the player's movement on contact. Possesses 2 HP.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                
+                // Outer membrane wobbly layer
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ff4d4d';
+                ctx.fillStyle = 'rgba(255, 77, 77, 0.15)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                const numPoints = 16;
+                Array.from({ length: numPoints }).forEach((_, i) => {
+                    const angle = (i / numPoints) * Math.PI * 2;
+                    const wVal = Math.sin(pulse * 3 + angle * 4) * 2.5;
+                    const r = size + wVal;
+                    const px = Math.cos(angle) * r;
+                    const py = Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Surface glycoprotein spikes
+                const numSpikes = 14;
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(255, 77, 77, 0.7)';
+                ctx.lineWidth = 1.5;
+                Array.from({ length: numSpikes }).forEach((_, i) => {
+                    const angle = (i / numSpikes) * Math.PI * 2 + (pulse * 0.05);
+                    const baseR = size + Math.sin(pulse * 3 + angle * 4) * 2.5;
+                    const spikeLen = 8 + Math.cos(pulse * 10 + i) * 2;
+                    const sx = Math.cos(angle) * baseR;
+                    const sy = Math.sin(angle) * baseR;
+                    const ex = Math.cos(angle) * (baseR + spikeLen);
+                    const ey = Math.sin(angle) * (baseR + spikeLen);
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(ex, ey);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(ex, ey, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = hitFlash ? '#ffffff' : '#ff7979';
+                    ctx.fill();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "hiv",
+            name: "HIV",
+            scientific: "Human Immunodeficiency Virus 1",
+            type: "Virus",
+            shape: "Spherical (enveloped)",
+            sizeReal: "120 nm",
+            sizeDraw: 22,
+            hp: 2,
+            threat: 3,
+            color: "#d90429",
+            colorRgb: "217, 4, 41",
+            desc: "Spherical retrovirus encapsulating two copies of single-stranded RNA, displaying a prominent internal conical protein capsid.",
+            behavior: "The conical core rotates slowly inside the transparent membrane. Steals player power-up charges and fires homing bullets that curve toward the player.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                
+                // Outer membrane
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#d90429';
+                ctx.fillStyle = 'rgba(217, 4, 41, 0.12)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, size, 0, Math.PI*2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Spikes (double bulbs gp120/gp41)
+                const numSpikes = 10;
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ff4d6d';
+                ctx.lineWidth = 2;
+                Array.from({ length: numSpikes }).forEach((_, i) => {
+                    const angle = (i / numSpikes) * Math.PI * 2;
+                    const sDist = size + 6;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * size, Math.sin(angle) * size);
+                    ctx.lineTo(Math.cos(angle) * sDist, Math.sin(angle) * sDist);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle) * (sDist + 1), Math.sin(angle) * (sDist + 1), 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = hitFlash ? '#ffffff' : '#ff4d6d';
+                    ctx.fill();
+                });
+
+                // Core conical capsid
+                ctx.save();
+                ctx.rotate(pulse * 0.35);
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(217, 4, 41, 0.8)';
+                ctx.fillStyle = 'rgba(217, 4, 41, 0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                // Conical shape (tapered capsule)
+                ctx.moveTo(-10, -5);
+                ctx.quadraticCurveTo(-15, 0, -10, 5);
+                ctx.lineTo(10, 2);
+                ctx.quadraticCurveTo(12, 0, 10, -2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.restore();
+            }
+        },
+        {
+            id: "sars_cov_2",
+            name: "SARS-CoV-2",
+            scientific: "Severe Acute Respiratory Syndrome Coronavirus 2",
+            type: "Virus",
+            shape: "Spherical with spikes (pleomorphic)",
+            sizeReal: "60 - 140 nm",
+            sizeDraw: 24,
+            hp: 3,
+            threat: 3,
+            color: "#ff7b00",
+            colorRgb: "255, 123, 0",
+            desc: "Enveloped spherical virus containing the largest known genome for an RNA virus. Adorned with a dense crown of spike proteins.",
+            behavior: "High health (3 HP). Crown spikes dynamically pulse outward. Shoots 3-bullet fan expansions (fan spreads) periodically.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Membrane
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ff7b00';
+                ctx.fillStyle = 'rgba(255, 123, 0, 0.14)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.85, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Spikes (Crown / Corona shape)
+                const numSpikes = 12;
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ff9e00';
+                ctx.lineWidth = 2;
+                Array.from({ length: numSpikes }).forEach((_, i) => {
+                    const angle = (i / numSpikes) * Math.PI * 2 + pulse * 0.1;
+                    const baseDist = size * 0.85;
+                    const peakDist = size * 1.25 + Math.sin(pulse * 8 + i) * 2;
+                    const sx = Math.cos(angle) * baseDist;
+                    const sy = Math.sin(angle) * baseDist;
+                    const ex = Math.cos(angle) * peakDist;
+                    const ey = Math.sin(angle) * peakDist;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(ex, ey);
+                    ctx.stroke();
+
+                    // Triangular crown tip
+                    const tAngle1 = angle - 0.12;
+                    const tAngle2 = angle + 0.12;
+                    const tx1 = Math.cos(tAngle1) * (peakDist - 3);
+                    const ty1 = Math.sin(tAngle1) * (peakDist - 3);
+                    const tx2 = Math.cos(tAngle2) * (peakDist - 3);
+                    const ty2 = Math.sin(tAngle2) * (peakDist - 3);
+
+                    ctx.beginPath();
+                    ctx.moveTo(ex, ey);
+                    ctx.lineTo(tx1, ty1);
+                    ctx.lineTo(tx2, ty2);
+                    ctx.closePath();
+                    ctx.fillStyle = hitFlash ? '#ffffff' : '#ffea00';
+                    ctx.fill();
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "bacteriophage_t4",
+            name: "Bacteriophage T4",
+            scientific: "Escherichia virus T4",
+            type: "Virus",
+            shape: "Complex (Icosahedral head, tail fibers)",
+            sizeReal: "200 nm (length)",
+            sizeDraw: 26,
+            hp: 3,
+            threat: 4,
+            color: "#06d6a0",
+            colorRgb: "6, 214, 160",
+            desc: "A complex dsDNA virus resembling a lunar lander, possessing a faceted head capsid holding DNA and thin legs for host binding.",
+            behavior: "Jumps vertically downward onto active cell barriers. While anchored, it slowly drains the barrier block health. Splits into 3 small particles upon death.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy - 8 + Math.sin(pulse * 5) * 2);
+                
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#06d6a0';
+                ctx.fillStyle = 'rgba(6, 214, 160, 0.15)';
+                ctx.lineWidth = 2.5;
+
+                // Hexagonal Capsule Head
+                ctx.beginPath();
+                const hSize = size * 0.55;
+                Array.from({ length: 6 }).forEach((_, i) => {
+                    const angle = (i / 6) * Math.PI * 2 - Math.PI/6;
+                    const px = Math.cos(angle) * hSize;
+                    const py = Math.sin(angle) * hSize - hSize;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Collar & Tail sheath
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, size * 0.7);
+                ctx.stroke();
+
+                // Baseplate
+                ctx.beginPath();
+                ctx.moveTo(-6, size * 0.7);
+                ctx.lineTo(6, size * 0.7);
+                ctx.stroke();
+
+                // 6 thin legs (spider-like)
+                const legWiggle = Math.sin(pulse * 10) * 1.5;
+                const legOffsets = [-10, -5, -1, 1, 5, 10];
+                Array.from({ length: 6 }).forEach((_, i) => {
+                    const isLeft = i < 3;
+                    const lx1 = isLeft ? -4 : 4;
+                    const ly1 = size * 0.7;
+                    const lx2 = isLeft ? -10 + legWiggle : 10 + legWiggle;
+                    const ly2 = size * 1.0;
+                    const lx3 = isLeft ? -15 + legWiggle * 2 : 15 + legWiggle * 2;
+                    const ly3 = size * 1.4;
+
+                    ctx.beginPath();
+                    ctx.moveTo(lx1, ly1);
+                    ctx.lineTo(lx2, ly2);
+                    ctx.lineTo(lx3, ly3);
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "ebola",
+            name: "Ebola Virus",
+            scientific: "Zaire ebolavirus",
+            type: "Virus",
+            shape: "Filamentous / Helical",
+            sizeReal: "80 nm x 1,000 nm",
+            sizeDraw: 28,
+            hp: 3,
+            threat: 4,
+            color: "#9b2226",
+            colorRgb: "155, 34, 38",
+            desc: "An enveloped filamentous single-stranded RNA filovirus, characterized by long flexible tubes that twist into curved shepherds' crooks.",
+            behavior: "Moves along diagonal sine curves instead of columns. Leaves a toxic trail of static red viral droplets that damage player cells on contact. (3 HP).",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#9b2226';
+                ctx.fillStyle = 'rgba(155, 34, 38, 0.2)';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // Curved shepherd's crook path using sine function
+                ctx.beginPath();
+                const length = size * 1.4;
+                Array.from({ length: 15 }).forEach((_, i) => {
+                    const t = (i / 14);
+                    // Generate curvature
+                    const px = -length/2 + t * length;
+                    const py = Math.sin(pulse * 3 + t * 4) * 8 + (t > 0.7 ? Math.sin((t - 0.7) * Math.PI) * -15 : 0);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.stroke();
+
+                // Spikes on the outer line
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(255, 120, 120, 0.6)';
+                ctx.lineWidth = 1.5;
+                Array.from({ length: 10 }).forEach((_, i) => {
+                    const t = (i / 9);
+                    const px = -length/2 + t * length;
+                    const py = Math.sin(pulse * 3 + t * 4) * 8 + (t > 0.7 ? Math.sin((t - 0.7) * Math.PI) * -15 : 0);
+                    
+                    const angle = pulse * 4 + i * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(px + Math.cos(angle) * 6, py + Math.sin(angle) * 6);
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "mimivirus",
+            name: "Mimivirus",
+            scientific: "Acanthamoeba polyphaga mimivirus",
+            type: "Virus",
+            shape: "Giant pseudo-icosahedral (fibers)",
+            sizeReal: "400 - 500 nm",
+            sizeDraw: 38,
+            hp: 8,
+            threat: 5,
+            color: "#4361ee",
+            colorRgb: "67, 97, 238",
+            desc: "A colossal double-stranded DNA giant virus. It features a massive capsid surrounded by a dense, fuzzy layer of peptidoglycan fibers.",
+            behavior: "Heavy mini-boss (8 HP). Fires a continuous vertical charge beam (energy stream) that sweeps sideways. Fibers wave slowly in cytoplasmic currents.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Wave seaweed-like fibers
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(67, 97, 238, 0.4)';
+                ctx.lineWidth = 1.5;
+                const numFibers = 36;
+                Array.from({ length: numFibers }).forEach((_, i) => {
+                    const angle = (i / numFibers) * Math.PI * 2;
+                    const baseR = size * 0.75;
+                    const fLen = size * 0.45 + Math.sin(pulse * 4 + i * 3) * 3;
+                    const sx = Math.cos(angle) * baseR;
+                    const sy = Math.sin(angle) * baseR;
+                    // Slightly bend the fibers based on sine wave
+                    const bx = Math.cos(angle + Math.sin(pulse + i)*0.08) * (baseR + fLen);
+                    const by = Math.sin(angle + Math.sin(pulse + i)*0.08) * (baseR + fLen);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy);
+                    ctx.lineTo(bx, by);
+                    ctx.stroke();
+                });
+
+                // Solid icosahedral core
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#4361ee';
+                ctx.fillStyle = 'rgba(6, 12, 40, 0.9)';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                Array.from({ length: 8 }).forEach((_, i) => {
+                    const angle = (i / 8) * Math.PI * 2 + pulse * 0.05;
+                    const px = Math.cos(angle) * size * 0.8;
+                    const py = Math.sin(angle) * size * 0.8;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Inner core structures
+                ctx.fillStyle = 'rgba(67, 97, 238, 0.3)';
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "megavirus",
+            name: "Megavirus",
+            scientific: "Megavirus chilensis",
+            type: "Virus",
+            shape: "Giant pseudo-icosahedral",
+            sizeReal: "440 nm capsid",
+            sizeDraw: 40,
+            hp: 10,
+            threat: 5,
+            color: "#7209b7",
+            colorRgb: "114, 9, 183",
+            desc: "A giant virus larger than small cellular organisms. Enclosed by an icosahedral protein shell covered in asymmetrical hair-like filaments.",
+            behavior: "Heavy mini-boss (10 HP). Glows and releases small explosive viral pods that detonate into radial 8-bullet spreads when hit.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Thick asymmetrical hair fibers
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(114, 9, 183, 0.35)';
+                ctx.lineWidth = 2;
+                const numHairs = 32;
+                Array.from({ length: numHairs }).forEach((_, i) => {
+                    const angle = (i / numHairs) * Math.PI * 2;
+                    // Introduce asymmetrical length
+                    const isLong = i % 3 === 0;
+                    const baseR = size * 0.8;
+                    const fLen = size * (isLong ? 0.5 : 0.25) + Math.cos(pulse * 5 + i * 2) * 2;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(angle) * baseR, Math.sin(angle) * baseR);
+                    ctx.lineTo(Math.cos(angle + 0.05) * (baseR + fLen), Math.sin(angle + 0.05) * (baseR + fLen));
+                    ctx.stroke();
+                });
+
+                // Hexagonal core capsid
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#7209b7';
+                ctx.fillStyle = 'rgba(15, 5, 25, 0.85)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                Array.from({ length: 6 }).forEach((_, i) => {
+                    const angle = (i / 6) * Math.PI * 2 + pulse * 0.03;
+                    const px = Math.cos(angle) * size * 0.85;
+                    const py = Math.sin(angle) * size * 0.85;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Inner glowing nucleus/DNA core
+                ctx.fillStyle = hitFlash ? '#ffffff' : 'rgba(247, 37, 133, 0.3)';
+                ctx.strokeStyle = '#f72585';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "pandoravirus",
+            name: "Pandoravirus",
+            scientific: "Pandoravirus salinus",
+            type: "Virus",
+            shape: "Giant ovoid / Flask-shaped",
+            sizeReal: "1,000 nm (1.0 μm)",
+            sizeDraw: 50,
+            hp: 25,
+            threat: 5,
+            color: "#3a0ca3",
+            colorRgb: "58, 12, 163",
+            desc: "A colossal giant virus displaying a unique amphora/flask shape with a double-layered membrane wall and an apical pore that matches the scale of eukaryotic cells.",
+            behavior: "Stage sub-boss (25 HP). Completely immune to standard bullets (damages only via power-up explosions or special weapons). Apical pore glows and releases massive shockwaves.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(-Math.PI / 2); // Point flask upwards/forwards
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#3a0ca3';
+                ctx.fillStyle = 'rgba(10, 5, 30, 0.9)';
+                ctx.lineWidth = 4.5;
+
+                // Draw Flask/Amphora body
+                ctx.beginPath();
+                ctx.moveTo(size * 0.7, -size * 0.2); // apical pore mouth right
+                ctx.quadraticCurveTo(size * 0.6, -size * 0.1, size * 0.4, -size * 0.3); // neck right
+                ctx.bezierCurveTo(size * 0.1, -size * 0.8, -size * 0.7, -size * 0.6, -size * 0.8, 0); // bulbous body base
+                ctx.bezierCurveTo(-size * 0.7, size * 0.6, size * 0.1, size * 0.8, size * 0.4, size * 0.3); // bulbous body left
+                ctx.quadraticCurveTo(size * 0.6, size * 0.1, size * 0.7, size * 0.2); // neck left
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Faint inner details
+                ctx.strokeStyle = 'rgba(72, 9, 183, 0.5)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(-size * 0.2, 0, size * 0.4, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Glowing apical pore opening
+                const pGlow = Math.sin(pulse * 12) * 4 + 6;
+                ctx.shadowBlur = pGlow;
+                ctx.shadowColor = '#00f3ff';
+                ctx.fillStyle = hitFlash ? '#ffffff' : '#00f3ff';
+                ctx.beginPath();
+                ctx.ellipse(size * 0.68, 0, 3, size * 0.16, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        },
+
+        // --- BACTERIA (Single-cell) ---
+        {
+            id: "mycoplasma",
+            name: "Mycoplasma",
+            scientific: "Mycoplasma pneumoniae",
+            type: "Bacteria",
+            shape: "Pleomorphic (lacks cell wall)",
+            sizeReal: "100 - 200 nm",
+            sizeDraw: 15,
+            hp: 1,
+            threat: 1,
+            color: "#ccff33",
+            colorRgb: "204, 255, 51",
+            desc: "One of the smallest known bacterial cells. Lacks a cell wall entirely, allowing it to morph shapes dynamically.",
+            behavior: "Glides slowly horizontally, continuously stretching and deforming without a rigid wall. Drops tiny acid-green droplets (1 HP).",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ccff33';
+                ctx.fillStyle = 'rgba(204, 255, 51, 0.12)';
+                ctx.lineWidth = 2;
+
+                // Deforming morphing shape using variable radii
+                ctx.beginPath();
+                const numLobe = 10;
+                Array.from({ length: numLobe }).forEach((_, i) => {
+                    const angle = (i / numLobe) * Math.PI * 2;
+                    const rMult = 1.0 + Math.sin(pulse * 4 + i * 3) * 0.18;
+                    const px = Math.cos(angle) * size * rMult;
+                    const py = Math.sin(angle) * size * rMult;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "staph_aureus",
+            name: "Staphylococcus",
+            scientific: "Staphylococcus aureus",
+            type: "Bacteria",
+            shape: "Spherical (coccus) clusters",
+            sizeReal: "0.5 - 1.0 μm",
+            sizeDraw: 18,
+            hp: 2,
+            threat: 2,
+            color: "#ffea00",
+            colorRgb: "255, 234, 0",
+            desc: "Gram-positive spherical bacteria that cluster together in grape-like groupings.",
+            behavior: "Groups up with neighboring units. Share a combined health pool when clustered. Fires quick yellow electrical arcs (2 HP).",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ffea00';
+                ctx.fillStyle = 'rgba(255, 234, 0, 0.2)';
+                ctx.lineWidth = 2;
+
+                // Cluster of 4 overlapping cocci
+                const offsets = [
+                    { x: -5, y: -5, r: 0.7 },
+                    { x: 6, y: -4, r: 0.65 },
+                    { x: -3, y: 6, r: 0.75 },
+                    { x: 5, y: 5, r: 0.68 }
+                ];
+                offsets.forEach((o, idx) => {
+                    const pR = size * o.r;
+                    const ox = o.x + Math.sin(pulse * 3 + idx) * 0.8;
+                    const oy = o.y + Math.cos(pulse * 3 + idx) * 0.8;
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, pR, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "strep_pneumo",
+            name: "Streptococcus",
+            scientific: "Streptococcus pneumoniae",
+            type: "Bacteria",
+            shape: "Lancet-shaped coccus pairs",
+            sizeReal: "0.5 - 1.25 μm",
+            sizeDraw: 20,
+            hp: 2,
+            threat: 2,
+            color: "#00a896",
+            colorRgb: "0, 168, 150",
+            desc: "Gram-positive lancet-shaped coccus, typically occurring in pairs (diplococci) sharing a single outer capsule capsule envelope.",
+            behavior: "Displays splitting behavior. When hit, the capsule breaks and separates the diplococcus into two smaller single bacteria with 1 HP each.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Faint outer envelope
+                ctx.strokeStyle = 'rgba(0, 168, 150, 0.3)';
+                ctx.fillStyle = 'rgba(0, 168, 150, 0.06)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, size * 1.3, size * 0.8, Math.PI/12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Two lancet shapes side-by-side
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#00a896';
+                ctx.fillStyle = 'rgba(0, 168, 150, 0.25)';
+                ctx.lineWidth = 2;
+                
+                const w = size * 0.55;
+                const h = size * 0.45;
+                
+                [-size * 0.45, size * 0.45].forEach((offsetVal, idx) => {
+                    ctx.save();
+                    ctx.translate(offsetVal, Math.sin(pulse * 5 + idx) * 0.5);
+                    ctx.rotate(Math.PI/6 * (idx === 0 ? -1 : 1));
+                    ctx.beginPath();
+                    ctx.moveTo(-w, 0);
+                    ctx.quadraticCurveTo(0, -h, w, 0);
+                    ctx.quadraticCurveTo(0, h, -w, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "e_coli",
+            name: "Escherichia coli",
+            scientific: "Escherichia coli",
+            type: "Bacteria",
+            shape: "Rod-shaped (bacillus)",
+            sizeReal: "1.0 - 2.0 μm",
+            sizeDraw: 22,
+            hp: 2,
+            threat: 2,
+            color: "#39ff14",
+            colorRgb: "57, 255, 20",
+            desc: "Gram-negative, flagellated rod-shaped bacterium. Standard cell template with multiple swimming tail flagella.",
+            behavior: "Moves forward in sudden, fast acceleration rushes. Fires green rod bullets. Core health is 2 HP.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(Math.PI / 12 * Math.sin(pulse * 2));
+
+                // Rod Capsule
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#39ff14';
+                ctx.fillStyle = 'rgba(57, 255, 20, 0.15)';
+                ctx.lineWidth = 2.5;
+
+                ctx.beginPath();
+                ctx.arc(-size * 0.35, 0, size * 0.45, Math.PI/2, -Math.PI/2);
+                ctx.lineTo(size * 0.35, -size * 0.45);
+                ctx.arc(size * 0.35, 0, size * 0.45, -Math.PI/2, Math.PI/2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Flags tails
+                ctx.strokeStyle = 'rgba(57, 255, 20, 0.7)';
+                ctx.lineWidth = 1.5;
+                Array.from({ length: 3 }).forEach((_, i) => {
+                    const yOff = -size * 0.2 + i * (size * 0.2);
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.75, yOff);
+                    
+                    const wave1 = Math.sin(pulse * 10 + i) * 6;
+                    const wave2 = Math.cos(pulse * 12 + i) * 4;
+                    ctx.bezierCurveTo(
+                        -size * 1.1, yOff + wave1,
+                        -size * 1.4, yOff + wave2,
+                        -size * 1.8, yOff + wave1
+                    );
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "vibrio",
+            name: "Vibrio cholerae",
+            scientific: "Vibrio cholerae",
+            type: "Bacteria",
+            shape: "Comma-shaped",
+            sizeReal: "1.5 - 3.0 μm",
+            sizeDraw: 21,
+            hp: 2,
+            threat: 2,
+            color: "#52b788",
+            colorRgb: "82, 183, 136",
+            desc: "Gram-negative, comma-shaped rod displaying a single polar flagellum. The causative agent of cholera.",
+            behavior: "Glides along spiral or corkscrew lines, making its horizontal velocity vary. Shoots water-like round bubble bullets (2 HP).",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(pulse * 1.2);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#52b788';
+                ctx.fillStyle = 'rgba(82, 183, 136, 0.15)';
+                ctx.lineWidth = 2.5;
+
+                // Comma / curved rod shape
+                ctx.beginPath();
+                ctx.arc(-6, -2, size * 0.4, Math.PI * 0.8, Math.PI * 1.8);
+                ctx.quadraticCurveTo(size * 0.4, -size * 0.3, size * 0.6, size * 0.1);
+                ctx.quadraticCurveTo(0, size * 0.5, -size * 0.4, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Single polar flagellum
+                ctx.strokeStyle = 'rgba(82, 183, 136, 0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(size * 0.6, size * 0.1);
+                const tfX = size * 1.4;
+                const tfY = Math.sin(pulse * 12) * 8 + size * 0.1;
+                ctx.quadraticCurveTo(size * 1.0, Math.cos(pulse*12)*6, tfX, tfY);
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "anthrax",
+            name: "Bacillus anthracis",
+            scientific: "Bacillus anthracis",
+            type: "Bacteria",
+            shape: "Large rod-shaped (chains)",
+            sizeReal: "3.0 - 5.0 μm",
+            sizeDraw: 26,
+            hp: 4,
+            threat: 4,
+            color: "#1b4332",
+            colorRgb: "27, 67, 50",
+            desc: "Large, Gram-positive spore-forming rod-shaped bacterium that joins end-to-end to build rigid, bamboo-like chains.",
+            behavior: "Heavy armor protection. Absorbs or deflects the first two player bullets before taking health damage. Releases spores on death.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(Math.PI / 18);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#1b4332';
+                ctx.fillStyle = 'rgba(27, 67, 50, 0.2)';
+                ctx.lineWidth = 3.5;
+
+                // Chain of 3 rectangular segments
+                const segW = size * 0.55;
+                const segH = size * 0.38;
+                
+                [-segW * 1.05, 0, segW * 1.05].forEach((offsetVal) => {
+                    ctx.save();
+                    ctx.translate(offsetVal, 0);
+                    ctx.beginPath();
+                    ctx.rect(-segW/2, -segH/2, segW, segH);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Inside spore circles
+                    ctx.fillStyle = hitFlash ? '#ffffff' : 'rgba(116, 198, 157, 0.4)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, segH * 0.35, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "treponema",
+            name: "Treponema",
+            scientific: "Treponema pallidum",
+            type: "Bacteria",
+            shape: "Helical spiral (spirochete)",
+            sizeReal: "6.0 - 20.0 μm",
+            sizeDraw: 30,
+            hp: 2,
+            threat: 3,
+            color: "#d8f3dc",
+            colorRgb: "216, 243, 220",
+            desc: "An extremely thin, helically coiled spirochete bacterium. Rotates dynamically to screw through fluid mediums.",
+            behavior: "Drifts horizontally like an elastic spring. Its thin spirochete shape makes it highly evasive and harder to hit with bullets (2 HP).",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#d8f3dc';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = '#b7e4c7';
+
+                // Spiral wave that rotates
+                ctx.beginPath();
+                const totalW = size * 1.6;
+                Array.from({ length: 24 }).forEach((_, i) => {
+                    const t = (i / 23);
+                    const px = -totalW/2 + t * totalW;
+                    const py = Math.sin(pulse * 15 + t * Math.PI * 5) * 8;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+
+        // --- ARCHAEA (Single-cell) ---
+        {
+            id: "nanoarchaeum",
+            name: "Nanoarchaeum",
+            scientific: "Nanoarchaeum equitans",
+            type: "Archaea",
+            shape: "Tiny spherical symbiont",
+            sizeReal: "400 nm (0.4 μm)",
+            sizeDraw: 12,
+            hp: 1,
+            threat: 1,
+            color: "#e05780",
+            colorRgb: "224, 87, 128",
+            desc: "An ultra-small hyperthermophilic marine archaeon. Lives as an obligate ectosymbiont attached to the larger archaeon Ignicoccus.",
+            behavior: "Appears attached to the back of a larger host cell. Boosts the host's fire speed. Flies off in erratic loops if host lyses (1 HP).",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Show host connection tether
+                ctx.strokeStyle = 'rgba(224, 87, 128, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size * 1.5, size * 0.8);
+                ctx.stroke();
+
+                // Small sphere
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#e05780';
+                ctx.fillStyle = 'rgba(224, 87, 128, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Faint inner structures
+                ctx.fillStyle = hitFlash ? '#ffffff' : '#ff7b9b';
+                ctx.beginPath();
+                ctx.arc(-2, -1, size * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        },
+        {
+            id: "sulfolobus",
+            name: "Sulfolobus",
+            scientific: "Sulfolobus acidocaldarius",
+            type: "Archaea",
+            shape: "Lobed, irregular spherical",
+            sizeReal: "0.8 - 1.0 μm",
+            sizeDraw: 18,
+            hp: 2,
+            threat: 3,
+            color: "#f95738",
+            colorRgb: "249, 87, 56",
+            desc: "A thermoacidophilic extremophile archaeon found in geothermal springs. Cells are highly lobed and irregular in geometry.",
+            behavior: "Spits burning acid fireballs. These leave temporary burning threat fire zones on the screen that damage the player's hull.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#f95738';
+                ctx.fillStyle = 'rgba(249, 87, 56, 0.16)';
+                ctx.lineWidth = 2.5;
+
+                // Highly irregular lobed circle
+                ctx.beginPath();
+                const numLobes = 8;
+                Array.from({ length: numLobes }).forEach((_, i) => {
+                    const angle = (i / numLobes) * Math.PI * 2;
+                    // Extreme irregular bubbling
+                    const rad = size * (0.95 + Math.sin(pulse * 6 + i * 4) * 0.15);
+                    const px = Math.cos(angle) * rad;
+                    const py = Math.sin(angle) * rad;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Internal sulphur grains
+                ctx.fillStyle = hitFlash ? '#ffffff' : 'rgba(255, 235, 84, 0.4)';
+                Array.from({ length: 3 }).forEach((_, i) => {
+                    ctx.beginPath();
+                    const ox = Math.cos(pulse + i * 2) * (size * 0.35);
+                    const oy = Math.sin(pulse + i * 2) * (size * 0.35);
+                    ctx.arc(ox, oy, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "methanobrevibacter",
+            name: "Methanobrevibacter",
+            scientific: "Methanobrevibacter smithii",
+            type: "Archaea",
+            shape: "Rod-shaped or coccobacillus",
+            sizeReal: "1.0 - 2.0 μm",
+            sizeDraw: 20,
+            hp: 2,
+            threat: 2,
+            color: "#b5838d",
+            colorRgb: "181, 131, 141",
+            desc: "The dominant methanogen archaeon in the human gut. Exhibits a compact coccobacillus shape with high cell envelope density.",
+            behavior: "Creates slow-moving greenish-brown methane clouds that shield surrounding pathogens, absorbing player projectiles.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#b5838d';
+                ctx.fillStyle = 'rgba(181, 131, 141, 0.14)';
+                ctx.lineWidth = 3;
+
+                // Oval Coccobacillus
+                ctx.beginPath();
+                ctx.ellipse(0, 0, size * 1.1, size * 0.75, Math.PI / 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Faint inner nuclear ring
+                ctx.strokeStyle = 'rgba(255, 205, 178, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+        {
+            id: "haloquadratum",
+            name: "Haloquadratum",
+            scientific: "Haloquadratum walsbyi",
+            type: "Archaea",
+            shape: "Perfect square, flat sheet-like",
+            sizeReal: "2.0 - 5.0 μm",
+            sizeDraw: 23,
+            hp: 2,
+            threat: 3,
+            color: "#ff0054",
+            colorRgb: "255, 0, 84",
+            desc: "Extremely unique halophilic archaeon that grows in flat, square sheet-like shapes, looking like window panes.",
+            behavior: "Shielded flats. It rotates 90 degrees periodically. Completely blocks bullets hitting its flat faces; vulnerable only to edge hits.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+                
+                // Slowly rotates
+                ctx.rotate(pulse * 0.4);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#ff0054';
+                ctx.fillStyle = 'rgba(255, 0, 84, 0.15)';
+                ctx.lineWidth = 3;
+
+                // Flat Square
+                ctx.beginPath();
+                const half = size * 0.9;
+                ctx.rect(-half, -half, half * 2, half * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Corner gas vacuoles (structural grid dots)
+                ctx.fillStyle = hitFlash ? '#ffffff' : '#ffccd5';
+                const corners = [
+                    { x: -half + 4, y: -half + 4 },
+                    { x: half - 4, y: -half + 4 },
+                    { x: half - 4, y: half - 4 },
+                    { x: -half + 4, y: half - 4 }
+                ];
+                corners.forEach(c => {
+                    ctx.beginPath();
+                    ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+            }
+        },
+
+        // --- FUNGI (Single-cell / Yeasts) ---
+        {
+            id: "candida",
+            name: "Candida",
+            scientific: "Candida albicans",
+            type: "Fungi",
+            shape: "Oval / Budding yeast",
+            sizeReal: "2.0 - 6.0 μm",
+            sizeDraw: 25,
+            hp: 3,
+            threat: 3,
+            color: "#eaf4f4",
+            colorRgb: "234, 244, 244",
+            desc: "Opportunistic diploid single-cell yeast. Can transition from spherical yeast cells to multicellular branching hyphae.",
+            behavior: "Spawns small budding yeast clones. If health drops below 50%, it transitions into a filamentous hyphal form to extend hitboxes.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#eaf4f4';
+                ctx.fillStyle = 'rgba(234, 244, 244, 0.16)';
+                ctx.lineWidth = 2.5;
+
+                // Main cell body (oval)
+                ctx.beginPath();
+                ctx.ellipse(0, 0, size * 1.0, size * 0.8, -Math.PI / 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Budding daughter cell
+                ctx.save();
+                ctx.translate(size * 0.85, -size * 0.55);
+                ctx.rotate(Math.PI/4);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, size * 0.5, size * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+                ctx.restore();
+            }
+        },
+        {
+            id: "yeast",
+            name: "Baker's Yeast",
+            scientific: "Saccharomyces cerevisiae",
+            type: "Fungi",
+            shape: "Spherical / Oval",
+            sizeReal: "3.0 - 10.0 μm",
+            sizeDraw: 28,
+            hp: 4,
+            threat: 2,
+            color: "#fcd5a1",
+            colorRgb: "252, 213, 161",
+            desc: "Model organism single-cell eukaryotic yeast. Spherical to oval body characterized by circular chitin scar lines from prior budding.",
+            behavior: "Passive 'tank' cell. Highly durable (4 HP). Does not shoot but absorbs damage and drops rare power-ups on lysis.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#fcd5a1';
+                ctx.fillStyle = 'rgba(252, 213, 161, 0.12)';
+                ctx.lineWidth = 3;
+
+                // Main body
+                ctx.beginPath();
+                ctx.arc(0, 0, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Bud scars (minor inner circles)
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(252, 213, 161, 0.4)';
+                ctx.lineWidth = 1.5;
+                const scars = [
+                    { x: -size * 0.4, y: -size * 0.3, r: size * 0.22 },
+                    { x: size * 0.5, y: size * 0.2, r: size * 0.18 }
+                ];
+                scars.forEach(s => {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+        },
+        {
+            id: "cryptococcus",
+            name: "Cryptococcus",
+            scientific: "Cryptococcus neoformans",
+            type: "Fungi",
+            shape: "Spherical yeast (thick capsule)",
+            sizeReal: "4.0 - 10.0 μm",
+            sizeDraw: 32,
+            hp: 5,
+            threat: 4,
+            color: "#3c096c",
+            colorRgb: "60, 9, 108",
+            desc: "Encapsulated eukaryotic yeast cell surrounded by a thick, protective polysaccharide capsule that blocks phagocytosis.",
+            behavior: "Shielded cell. The capsule acts as an active shield (absorbs 3 hits) before the inner 2 HP yeast core takes damage.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                // Thick glowing capsule shield outer border
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(157, 78, 237, 0.28)';
+                ctx.fillStyle = 'rgba(90, 24, 154, 0.05)';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Core yeast cell
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#3c096c';
+                ctx.fillStyle = 'rgba(60, 9, 108, 0.35)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.75, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Nucleus
+                ctx.fillStyle = hitFlash ? '#ffffff' : 'rgba(224, 170, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(-size * 0.15, -size * 0.1, size * 0.22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        },
+        {
+            id: "pneumocystis",
+            name: "Pneumocystis",
+            scientific: "Pneumocystis jirovecii",
+            type: "Fungi",
+            shape: "Spherical / Oval cyst",
+            sizeReal: "5.0 - 8.0 μm (cyst)",
+            sizeDraw: 27,
+            hp: 4,
+            threat: 4,
+            color: "#b388ff",
+            colorRgb: "179, 136, 255",
+            desc: "A unique yeast-like organism causing PCP pneumonia, exhibiting a thick double-walled cyst enclosing up to 8 internal intracystic bodies (spores).",
+            behavior: "Splitting swarm. On death/lysis, the cyst bursts open, spawning 6 to 8 tiny trophic forms (1 HP each) that swarm downward toward the player.",
+            draw: (ctx, cx, cy, size, pulse, hitFlash) => {
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : '#b388ff';
+                ctx.fillStyle = 'rgba(179, 136, 255, 0.1)';
+                ctx.lineWidth = 3.5;
+
+                // Double walled cyst
+                ctx.beginPath();
+                ctx.arc(0, 0, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.strokeStyle = hitFlash ? '#ffffff' : 'rgba(179, 136, 255, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.85, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 8 internal spores
+                ctx.fillStyle = hitFlash ? '#ffffff' : '#e0a1ff';
+                const numSpores = 8;
+                Array.from({ length: numSpores }).forEach((_, i) => {
+                    const angle = (i / numSpores) * Math.PI * 2 + pulse * 0.1;
+                    const dist = size * 0.45;
+                    const sx = Math.cos(angle) * dist;
+                    const sy = Math.sin(angle) * dist;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+            }
+        }
+    ];
+
+    // --- PROCEDURAL AUDIO MANAGER (WEB AUDIO) ---
+    class WebAudioManager {
+        constructor() {
+            this.ctx = null;
+        }
+
+        init() {
+            if (!this.ctx) {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        }
+
+        playClick() {
+            this.init();
+            if (!this.ctx || this.ctx.state === 'suspended') return;
+            
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(150, now + 0.04);
+            
+            gain.gain.setValueAtTime(0.04, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            osc.start();
+            osc.stop(now + 0.05);
+        }
+
+        playSwell() {
+            this.init();
+            if (!this.ctx || this.ctx.state === 'suspended') return;
+
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(220, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start();
+            osc.stop(now + 0.25);
+        }
+
+        playExplode() {
+            this.init();
+            if (!this.ctx || this.ctx.state === 'suspended') return;
+
+            const now = this.ctx.currentTime;
+            
+            // Rumble low-frequency
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, now);
+            osc.frequency.linearRampToValueAtTime(20, now + 0.4);
+
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(now + 0.45);
+
+            // Noise burst (white noise)
+            const bufferSize = this.ctx.sampleRate * 0.35;
+            const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            Array.from({ length: bufferSize }).forEach((_, i) => {
+                data[i] = Math.random() * 2 - 1;
+            });
+
+            const noiseNode = this.ctx.createBufferSource();
+            noiseNode.buffer = buffer;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(400, now);
+
+            const noiseGain = this.ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.18, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+            noiseNode.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(this.ctx.destination);
+
+            noiseNode.start();
+            noiseNode.stop(now + 0.35);
+        }
+
+
+    }
+
+    const audio = new WebAudioManager();
+
+    // --- ANIMATION ENGINE ---
+    class AnimationEngine {
+        constructor() {
+            this.activeDrawers = []; // list of objects: { canvasId, pathogenId, ctx, cx, cy, hitFlash, size }
+            this.lastTime = 0;
+            this.pulse = 0;
+            this.particles = []; // particles for lysis effects
+            
+            this.loop = this.loop.bind(this);
+            requestAnimationFrame(this.loop);
+        }
+
+        addDrawer(canvas, pathogen, isLarge = false) {
+            const ctx = canvas.getContext('2d');
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const drawScale = isLarge ? 2.5 : 1.0;
+            
+            // Remove existing duplicate canvas
+            this.activeDrawers = this.activeDrawers.filter(d => d.canvas !== canvas);
+            
+            this.activeDrawers.push({
+                canvas,
+                ctx,
+                cx,
+                cy,
+                pathogen,
+                size: pathogen.sizeDraw * drawScale,
+                hitFlash: 0,
+                lysed: false
+            });
+        }
+
+        removeDrawer(canvas) {
+            this.activeDrawers = this.activeDrawers.filter(d => d.canvas !== canvas);
+        }
+
+        triggerHit(canvas) {
+            const drawer = this.activeDrawers.find(d => d.canvas === canvas);
+            if (drawer) {
+                drawer.hitFlash = 0.12; // seconds flash duration
+            }
+        }
+
+
+
+        triggerLysis(canvas) {
+            const drawer = this.activeDrawers.find(d => d.canvas === canvas);
+            if (drawer && !drawer.lysed) {
+                drawer.lysed = true;
+                
+                // Spawn particles
+                const count = drawer.pathogen.threat * 10 + 20;
+                Array.from({ length: count }).forEach(() => {
+                    this.particles.push({
+                        x: drawer.cx + (Math.random() * 20 - 10),
+                        y: drawer.cy + (Math.random() * 20 - 10),
+                        vx: (Math.random() * 140 - 70),
+                        vy: (Math.random() * 140 - 70),
+                        life: 0.8 + Math.random() * 0.4,
+                        maxLife: 1.2,
+                        color: drawer.pathogen.color,
+                        ctx: drawer.ctx,
+                        canvas: drawer.canvas
+                    });
+                });
+            }
+        }
+
+        restoreLysis(canvas) {
+            const drawer = this.activeDrawers.find(d => d.canvas === canvas);
+            if (drawer) {
+                drawer.lysed = false;
+            }
+        }
+
+        loop(time) {
+            if (!this.lastTime) this.lastTime = time;
+            const dt = (time - this.lastTime) / 1000.0;
+            this.lastTime = time;
+            
+            this.pulse += dt;
+
+            // Render active drawers
+            this.activeDrawers.forEach(d => {
+                const ctx = d.ctx;
+                ctx.clearRect(0, 0, d.canvas.width, d.canvas.height);
+
+                if (d.lysed) {
+                    // Draw nothing of the base cell, particles will render
+                    return;
+                }
+
+                // Render cell
+                d.pathogen.draw(ctx, d.cx, d.cy, d.size, this.pulse, d.hitFlash > 0);
+
+                // Flash animations timer
+                if (d.hitFlash > 0) {
+                    d.hitFlash -= dt;
+                }
+
+
+            });
+
+            // Update & Render Particles
+            this.particles = this.particles.filter(p => {
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vx *= Math.exp(-1.5 * dt); // dampening
+                p.vy *= Math.exp(-1.5 * dt);
+                p.life -= dt;
+
+                const opacity = p.life / p.maxLife;
+                const ctx = p.ctx;
+                
+                ctx.save();
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = p.color;
+                ctx.globalAlpha = Math.max(0, opacity);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                return p.life > 0;
+            });
+
+            requestAnimationFrame(this.loop);
+        }
+    }
+
+    const engine = new AnimationEngine();
+
+    // --- DOM CONTROLLER ---
+    const codexGrid = document.getElementById('codexGrid');
+    const searchInput = document.getElementById('searchInput');
+    const filterTabs = document.getElementById('filterTabs');
+    const sortSelect = document.getElementById('sortSelect');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalClose = document.getElementById('modalClose');
+    const modalBody = document.getElementById('modalBody');
+
+    let currentFilter = 'all';
+    let currentSearch = '';
+    let currentSort = 'default';
+
+    // Renders list of pathogen cards
+    function renderCodex() {
+        // Clear previous canvas connections to engine
+        const canvases = codexGrid.querySelectorAll('canvas');
+        canvases.forEach(canvas => engine.removeDrawer(canvas));
+
+        // Filter and sort the array
+        let list = PATHOGENS.filter(p => {
+            const matchesType = (currentFilter === 'all' || p.type === currentFilter);
+            const matchesSearch = (
+                p.name.toLowerCase().includes(currentSearch) ||
+                p.scientific.toLowerCase().includes(currentSearch) ||
+                p.shape.toLowerCase().includes(currentSearch) ||
+                p.desc.toLowerCase().includes(currentSearch)
+            );
+            return matchesType && matchesSearch;
+        });
+
+        if (currentSort === 'name-asc') {
+            list.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (currentSort === 'size-asc') {
+            list.sort((a, b) => a.sizeDraw - b.sizeDraw);
+        } else if (currentSort === 'size-desc') {
+            list.sort((a, b) => b.sizeDraw - a.sizeDraw);
+        } else if (currentSort === 'hp-desc') {
+            list.sort((a, b) => b.hp - a.hp);
+        }
+
+        codexGrid.innerHTML = '';
+
+        if (list.length === 0) {
+            codexGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 4rem 0;">No pathogens matched your criteria.</div>`;
+            return;
+        }
+
+        list.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'pathogen-card';
+            card.style.setProperty('--accent-color', p.color);
+            card.style.setProperty('--accent-color-rgb', p.colorRgb);
+            card.setAttribute('data-id', p.id);
+            
+            card.innerHTML = `
+                <div class="canvas-container">
+                    <canvas id="canvas-${p.id}" width="160" height="160"></canvas>
+                </div>
+                <div class="pathogen-type" style="color: ${p.color};">${p.type}</div>
+                <div class="pathogen-name">${p.name}</div>
+                <div class="pathogen-sci">${p.scientific}</div>
+                <div class="card-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Visual Size</span>
+                        <span class="stat-value">${p.sizeDraw}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">HP</span>
+                        <span class="stat-value">${p.hp}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Threat</span>
+                        <span class="stat-value text-glow" style="color: ${p.color};">${'★'.repeat(p.threat)}</span>
+                    </div>
+                </div>
+            `;
+
+            card.addEventListener('mouseenter', () => audio.playClick());
+            card.addEventListener('click', () => openModal(p));
+            codexGrid.appendChild(card);
+
+            // Bind to animation engine
+            const canvasNode = document.getElementById(`canvas-${p.id}`);
+            engine.addDrawer(canvasNode, p, false);
+        });
+    }
+
+    // Modal Manager
+    function openModal(p) {
+        audio.playSwell();
+        modalOverlay.classList.add('active');
+        
+        modalBody.innerHTML = `
+            <div class="visualizer-column">
+                <div class="detail-canvas-container">
+                    <canvas id="detail-canvas" width="280" height="280"></canvas>
+                </div>
+                <div class="interactive-buttons">
+                    <button class="action-btn damage-btn" id="btn-hit">Stimulate Hit</button>
+                    <button class="action-btn lysis-btn" id="btn-lysis">Lysis (Burst)</button>
+                </div>
+            </div>
+            <div class="details-column">
+                <div class="detail-header">
+                    <div class="pathogen-type" style="display: inline-block; color: ${p.color};">${p.type}</div>
+                    <h2 style="font-size: 2.2rem; font-weight: 800; color: #fff; margin-top: 0.25rem;">${p.name}</h2>
+                    <div class="detail-sci-name">${p.scientific}</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="detail-stat">
+                        <div class="stat-label">Real Dimensions</div>
+                        <div class="detail-stat-val">${p.sizeReal}</div>
+                    </div>
+                    <div class="detail-stat">
+                        <div class="stat-label">Physical Shape</div>
+                        <div class="detail-stat-val">${p.shape}</div>
+                    </div>
+                    <div class="detail-stat">
+                        <div class="stat-label">In-Game Scale / HP</div>
+                        <div class="detail-stat-val">${p.sizeDraw} Scale &nbsp;&nbsp;|&nbsp;&nbsp; ${p.hp} HP</div>
+                    </div>
+                    <div class="detail-stat">
+                        <div class="stat-label">Threat Evaluation</div>
+                        <div class="detail-stat-val threat-stars" style="color: ${p.color};">${'★'.repeat(p.threat)}</div>
+                    </div>
+                </div>
+
+                <p class="detail-description">${p.desc}</p>
+
+                <div class="game-log-panel">
+                    <div class="game-log-title" style="color: ${p.color};">In-Game Mechanics Log</div>
+                    <div class="game-log-text">${p.behavior}</div>
+                </div>
+            </div>
+        `;
+
+        const detailCanvas = document.getElementById('detail-canvas');
+        engine.addDrawer(detailCanvas, p, true);
+
+        // Bind interactive elements inside modal
+        document.getElementById('btn-hit').addEventListener('click', () => {
+            audio.playClick();
+            engine.triggerHit(detailCanvas);
+        });
+
+        const lysisBtn = document.getElementById('btn-lysis');
+        lysisBtn.addEventListener('click', () => {
+            if (lysisBtn.disabled) return;
+            audio.playExplode();
+            engine.triggerLysis(detailCanvas);
+            
+            // 0.5s Cooldown & Auto-Regenerate
+            lysisBtn.disabled = true;
+            lysisBtn.textContent = 'Lysing...';
+            lysisBtn.style.opacity = '0.5';
+            lysisBtn.style.cursor = 'not-allowed';
+            
+            setTimeout(() => {
+                engine.restoreLysis(detailCanvas);
+                lysisBtn.disabled = false;
+                lysisBtn.textContent = 'Lysis (Burst)';
+                lysisBtn.style.opacity = '';
+                lysisBtn.style.cursor = '';
+            }, 500);
+        });
+    }
+
+    function closeModal() {
+        modalOverlay.classList.remove('active');
+        const detailCanvas = document.getElementById('detail-canvas');
+        if (detailCanvas) {
+            engine.removeDrawer(detailCanvas);
+        }
+    }
+
+    // --- BIND EVENTS ---
+    searchInput.addEventListener('input', (e) => {
+        currentSearch = e.target.value.toLowerCase().trim();
+        renderCodex();
+    });
+
+    filterTabs.addEventListener('click', (e) => {
+        if (e.target.classList.contains('filter-btn')) {
+            const tabs = filterTabs.querySelectorAll('.filter-btn');
+            tabs.forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            currentFilter = e.target.getAttribute('data-type');
+            renderCodex();
+        }
+    });
+
+    sortSelect.addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        renderCodex();
+    });
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+    });
+
+    // Initialize application UI
+    renderCodex();
+</script>
+</body>
+</html>

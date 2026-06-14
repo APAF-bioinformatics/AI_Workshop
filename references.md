@@ -20,8 +20,13 @@ This file tracks all external URLs used in the AI Workshop (Immunity Protocol) p
 - **GitHub Repository**: [AI_Workshop](https://github.com/APAF-bioinformatics/AI_Workshop)
 - **Impeccable Design Framework**: [impeccable](https://github.com/pbakaus/impeccable)
 
+## Bioinformatics Databases & Literature
+- **NCBI Taxonomy Database**: [ncbi.nlm.nih.gov/taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy)
+- **SIB ViralZone**: [viralzone.expasy.org](https://viralzone.expasy.org)
+
 ## Video References
 - **Galaga Gameplay Video**: [YouTube link](https://www.youtube.com/watch?v=dvjapcHsqXY&time_continue=19&source_ve_path=NzY3NTg&embeds_referring_euri=https%3A%2F%2Fwww.google.com%2Fsearch%3Fsca_esv%3D524f1682bc7b6793%26rlz%3D1C5GCCM_en%26sxsrf%3DANbL-n6H73RSR79IkCvB3UmJFAm5QdMDgw%3A1781176457959%26udm)
 
-<!-- APAF Bioinformatics | references.md | Approved | 2026-06-12 -->
+<!-- APAF Bioinformatics | references.md | Approved | 2026-06-14 -->
+
 

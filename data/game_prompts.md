@@ -137,7 +137,7 @@
 
 ### Prompt 14: HUD & Bottom Control Panel UI
 > Develop the HUD & bottom overlay layouts:
-> - Top overlay containing Game Logo (with difficulty badge), Selected Lineage Name, Score, High Score, Stage number, Kill counter, Life icons (drawing mini-cells), and Complement charges (4 gold squares).
+> - Top overlay containing Game Logo (using a font size of 17px Orbitron at X=30), Selected Lineage Name, Score (positioned starting at X=310 to prevent overlapping with the logo text), High Score, Stage number, Kill counter, Life icons (drawing mini-cells), and Complement charges (4 gold squares). Ensure alignments and spacings are carefully set to avoid any overlapping text elements.
 > - Bottom area displays active power-up timers.
 > - Include a full-width translucent control panel along the bottom of the canvas showing: Sound state [M] and Pause state [P] on the left, and a power-up legend using coloured hexagon symbols (matching in-game drop appearance) next to each entry:
 >   - Gold hexagon labelled 'T' → TRIPLE SHOT [1] with current inventory count
@@ -157,5 +157,12 @@
 > - Menu displays lineage cards with unlock progression. Game Over shows run stats and leaderboard.
 
 ---
+
+### Prompt 16: Pathogen Codex & Visual Showcase (Interactive Database)
+* **Objective:** Research biological pathogen sizes/shapes, generate a visual interactive database page (a "Pokedex for pathogens"), and systematically integrate these new pathogen species (Parvovirus, Poliovirus, E. coli, etc.) into the main game stages with a gradual progression.
+* **Participant Instructions & Prompt:** Copy and paste the following prompts to your Antigravity agent:
+**Participant Prompt 1 (Codex Showcase):**
+"Browse the literature to find typical sizes and shapes for pathogens including bacteria, viruses, fungi, and archaea (focus on viruses and single-celled organisms, including giant viruses like Mimiviruses). Create a text file called `pathogen_table.txt` containing a formatted reference table of their type, name, shape, size, and game mechanics notes.
+Next, create a standalone HTML file called `pathogen_showcase.html` that imports the Outfit font and acts as a visual Codex. For each pathogen, render a dynamic 2D Canvas drawing representing it in real-time (vibrating spikes, waving flagella, wobbly bodies) using functional array loops. Add a search bar, filtering tabs, and an interactive detailed modal. In the modal, provide buttons for 'Stimulate Hit' (cell flashes white) and 'Lysis' (cell bursts into floating particles and automatically regenerates after 500ms). Keep all HTML/CSS/JS in a single file, and write highly concise code without comments."
 
 <!-- APAF Bioinformatics | game_prompts.md | Approved | 2026-06-12 -->

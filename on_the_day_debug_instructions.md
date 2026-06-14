@@ -37,6 +37,15 @@ Antigravity has already provisioned a helper skill in your local `.gemini/skills
 
 ## 4. Debugging & Implementation Tasks
 
+If you have any questions, please post to the messaging channel using this template:
+
+
+Put this 
+*Task:* [e.g., Task C - Barrier Shield]
+*Error/Symptom:* [e.g., Bullets pass through early / console error]
+*Workspace State:* [e.g., Using Antigravity IDE, AI checking browser console for errors]
+
+
 Complete the following programming challenges in `index.html`:
 
 ### Task A: Smooth Player Movement 
@@ -44,10 +53,14 @@ Complete the following programming challenges in `index.html`:
 * **Problem:** The horizontal movement is very jerky, lacks fine control, and jumps position erratically.
 * **Goal:** Implement linear interpolation (lerp) or damping to make player movement smooth and viscous.
 
-### Task B: Complement Power-Up UI Alignment 
-* **Location:** Locate the HUD / bottom HUD status panel rendering code.
-* **Problem:** The complement status text at the bottom overflows past the right edge of the canvas bounding box.
-* **Goal:** Recalculate alignments/margins to ensure the complement charge meter fits cleanly on all aspect ratios.
+### Task B: HUD UI Alignment and Overlaps
+* **Location:** Locate the HUD status panel rendering code.
+* **Problem:** 
+  * The "IMMUNITY PROTOCOL" logo text overlaps with the "SCORE" text in the top HUD panel.
+  * The complement status text at the bottom overflows past the right edge of the canvas bounding box.
+* **Goal:** 
+  * Recalculate the horizontal spacing and font sizes of the top HUD elements (e.g. reduce logo font size to 17px Orbitron at X=30, and position SCORE at X=310, STAGE at X=410, LINEAGE at X=500, etc.) to prevent any text overlaps.
+  * Recalculate alignments/margins to ensure the complement charge meter fits cleanly on all aspect ratios.
 
 ### Task C: Layer-by-Layer Barrier Shield Damage 
 * **Location:** Identify the bullet-versus-barrier collision handler.
@@ -167,8 +180,10 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 ### Task L: Conga Line Entry Formation
 > Implement a dynamic Conga Line entry formation when a stage is initialized:
 > - Group and order the pathogens sequentially by columns to form a single-file queue. The center columns must fill first, ordering the columns from center to outward: Columns 3 and 4 first (top-to-bottom), then Columns 2 and 5, then Columns 1 and 6, and finally Columns 0 and 7.
-> - Pathogens must enter the screen in a closely spaced, flowing train (one after another); a pathogen begins its swoop flight when the previous pathogen in the queue is slightly ahead on the flight path (e.g., when the predecessor has reached 8% of its flight completion), allowing multiple pathogens to follow each other mid-flight along the curve.
+> - The 8 columns (conga lines) of pathogens must enter the screen one by one. Once all pathogens in a conga line have either arrived at their home slots or been destroyed, wait exactly 0.8 seconds before starting the next conga line.
+> - Pathogens must enter in a spaced, flowing train; a pathogen begins its swoop flight when the previous pathogen in its conga line has reached 20% of its flight completion (wider spacing) and the swoop speed is slightly reduced (e.g. `swoopProgress` updates at `0.6 * dt` instead of `0.8`).
 > - Flight path: Pathogens swoop from offscreen (top-left for even columns, top-right for odd columns) down toward the center-bottom, execute a full 360-degree circular loop (radius ~100px) around a center point near (450, 600), and then glide smoothly from the loop to their home grid slots.
+> - Swooping pathogens must occasionally fire/drop bullets downwards (Galaga-style) at the player cell while they are active and on-screen during their swoop flight.
 > - The player cell is fully active (unlocked) and can move/shoot pathogens mid-flight immediately upon stage start.
 > - Keep collective grid movement (side-to-side drift and descent) inactive as long as any pathogen is still swooping or hasn't arrived at its home slot.
 >
@@ -192,15 +207,33 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 ---
 
 ### Task N: Variant Pathogen Grid Formations
-> Introduce variety to non-boss stages by implementing three distinct structural formations that cycle dynamically based on the stage number:
-> - **Formation 1 (Alternating Concentric Circles):** Arrange pathogens in three concentric circles (outer radius 180px, middle 120px, inner 60px) rotating around a central point (450, 250). Symmetrically alternate rotation directions (e.g., outer and inner circles rotate clockwise, middle rotates counter-clockwise) at a constant angular speed of 0.5 rad/s.
+> Introduce variety to non-boss stages by implementing four distinct structural formations that cycle dynamically based on the stage number before each boss battle:
+> - **Formation 1 (Normal Rectangular Grid):** The standard 4x8 grid arrangement with conga line swooping entries.
 > - **Formation 2 (Pulsating Star Shape):** Arrange pathogens in a 5-pointed star layout. The entire formation drifts side-to-side while continuously pulsating in size (scaling its coordinates dynamically between 85% and 115% of its native size using a sine-wave function: `scale = 1.0 + 0.15 * sin(time * 2.0)`).
 > - **Formation 3 (Undulating Wave Shape):** Arrange pathogens in a double-sine wave layout. As the formation drifts horizontally, each column undulates vertically based on elapsed time and its horizontal position (`y = base_y + 40 * sin(time * 3.0 + colIndex * 0.5)`), creating a fluid wave animation across the screen.
+> - **Formation 4 (Alternating Concentric Circles):** Arrange pathogens in three concentric circles (outer radius 180px, middle 120px, inner 60px) rotating around a central point (450, 250). Symmetrically alternate rotation directions (e.g., outer and inner circles rotate clockwise, middle rotates counter-clockwise) at a constant angular speed of 0.5 rad/s.
 > - Each of these formations will still have to move down over time as per the rectangular formation.
 >
 > **Design Guidelines Map:**
 > - Layout Geometry (Circles, Stars, Waves): [layout.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/layout.md) (rules for geometric alignment, centering, and symmetric spacing)
 > - Pulsation, Wave & Rotation Math: [animate.md](file:///Users/ignatiuspang/Workings/2026/AI_Workshop_Preparations/.gemini/skills/impeccable-design/reference/animate.md) (guidelines for fluid trigonometric motion design)
+
+---
+
+### Task O: Adding More Pathogen Species & Stage Progression
+  > "Using the pathogen drawings and dimensions created for the showcase `pathogen_showcase.html`, update the `Pathogen` class inside `index.html` to support constructor sizing/colors and drawing methods for these new species: 'parvovirus', 'poliovirus', 'mycoplasma', 'e_coli', 'sars_cov_2', 'influenza', 'candida', 'cryptococcus', 'bacteriophage_t4', 'haloquadratum', and 'mimivirus'.
+  > Next, update the `spawnPathogens()` and swoop logic inside `index.html` to establish a clean stage-by-stage progression, maintaining the original 4x8 grid configuration (32 pathogens) to preserve all swooping entries, conga lines, and formations, while implementing delayed conga line entries (0.8-second delay between columns, 0.6x swoop speed, 20% spacing) and Galaga-style firing during swoops. Dynamically cycle through four structural formations (Grid, Star, Wave, Circles) before each boss battle, introducing at least 3 distinct types of pathogens in early stages:
+  > - **Stage 1:** 4x8 grid with 'parvovirus' on rows 0-1, 'poliovirus' on row 2, and 'mycoplasma' on row 3 (at least 3 types). Starts with standard rectangular Grid formation.
+  > - **Stage 2:** 4x8 grid with 'mycoplasma' on rows 0-1, 'poliovirus' on row 2, and 'e_coli' on row 3. Arranged in Pulsating Star formation.
+  > - **Stage 3:** 4x8 grid with 'e_coli' on rows 0-1, 'influenza' on row 2, and 'sars_cov_2' on row 3. Arranged in Undulating Wave formation.
+  > - **Stage 4:** 4x8 grid with 'influenza' on rows 0-1, 'candida' on row 2, and 'cryptococcus' on row 3. Arranged in Concentric Circles formation.
+  > - **Stage 5:** Mutagen Boss
+  > - **Stage 6:** 4x8 grid with 'haloquadratum' on rows 0-1, 'bacteriophage_t4' on row 2, and 'mimivirus' on row 3. Starts the grid cycle again (Grid formation).
+  > - **Stage 7+:** 4x8 mixed grid dynamically chosen from the pathogen pool with scaled HP multipliers, cycling formations in sequence.
+  > Write highly compact code without comments."
+* **Quota Note for Free Accounts:**
+  > [!IMPORTANT]
+  > Because compiling multiple Canvas visual render algorithms and structural layout handlers uses significant output tokens (~30k tokens), free-tier accounts may hit rate limits. To avoid quota issues, run the tasks in separate prompts as split above, ask the agent to write concise code, and request that comments and verbose explanations be omitted.
 
 ---
 

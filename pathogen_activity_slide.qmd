@@ -1,0 +1,101 @@
+---
+title: "Interactive Pathogen Codex"
+subtitle: "AI Workshop Advanced Extension Activity"
+author: "APAF Bioinformatics Team"
+date: "2026-06-14"
+format:
+  revealjs:
+    theme: league
+    transition: slide
+    background-transition: fade
+    self-contained: true
+    width: 1280
+    height: 720
+    slide-number: true
+    preview-links: auto
+---
+
+## Overview: The Pathogen Codex Activity
+
+### The Goal
+Create a visual "Pokedex" of biological pathogens and systematically integrate these new species into **Immunity Protocol**'s stages.
+
+### The Deliverables
+1. **`pathogen_table.txt`**: Scientific sizes, shapes, and game specifications.
+2. **`pathogen_showcase.html`**: A standalone interactive sandbox to preview visual shapes, colors, and damage animations.
+3. **`index.html` integration**: Real-time rendering of all species in game stages with distinct visual wiggles, colors, and wobbly loops.
+
+---
+
+## Systematic Stage Progression
+
+Four distinct 4x8 formations (32 cells) cycle before each boss fight, featuring a delayed conga-line entry that fires bullets Galaga-style:
+
+- **Delayed Conga Lines**: Pathogens enter in 8 distinct columns. Each column enters sequentially with a 2-second delay between them.
+- **Slower Swoops & Firing**: Swoop speed is reduced to 0.6x with wider 20% spacing, dropping bullets downwards dynamically mid-flight.
+- **Stage 1 (Normal Grid)**: Parvovirus (1 HP), Poliovirus (1 HP), and Mycoplasma (1 HP).
+- **Stage 2 (Pulsating Star)**: Mycoplasma (1 HP), Poliovirus (1 HP), and E. coli (2 HP).
+- **Stage 3 (Undulating Wave)**: E. coli (2 HP), Influenza (2 HP), and SARS-CoV-2 (3 HP).
+- **Stage 4 (Concentric Circles)**: Influenza (2 HP), Candida (3 HP), and Cryptococcus (5 HP).
+- **Stage 5 (Boss Stage)**: Mutagen Boss.
+- **Stage 6 (Normal Grid)**: Haloquadratum (2 HP), T4 Phages (3 HP), and Mimivirus (8 HP).
+- **Stage 7+ (Sequence Cycle)**: Mixed grid from the pathogen pool with scaled HP, cycling formations.
+
+---
+
+## Technical Specifications
+
+### Visual Scale & Neon Palettes
+- Map actual biological dimensions (nm to μm) to in-game scales (e.g. Parvovirus `size = 14` up to Pandoravirus `size = 50`).
+- Apply vibrant HSL colors (Red Viruses, Green Bacteria, Pink Archaea, Purple Fungi).
+
+### Interactive Canvas Simulations
+- **Stimulate Hit**: Causes the pathogen to flash white temporarily.
+- **Lysis (Burst)**: Cell explodes into a burst of fading particles.
+- **Auto-Regenerate**: Cell automatically reforms after a 500ms cooldown.
+
+---
+
+## Implementation Walkthrough
+
+::: {.incremental}
+1. **Step 1: Literature Lookup**
+   - Compile sizes, shapes, and taxonomy details of single-cell organisms and giant viruses.
+2. **Step 2: Database UI Grid**
+   - Scaffold a dark-themed grid of cards showing names, scales, and core canvas nodes.
+3. **Step 3: Game Code Integration**
+   - Update `Pathogen` constructor and drawing routines inside the game loop to render the unique structures of all species.
+4. **Step 4: Stage Progression System**
+   - Rework `spawnPathogens()` to deploy custom layouts and mixtures for each stage.
+:::
+
+---
+
+## Free Quota Optimization
+
+> [!WARNING]
+> **High Token Generation Costs**
+>
+> Generating 26 custom Canvas drawing functions along with stage progression logic exceeds **30,000+ output tokens**. Free-tier accounts can easily exhaust daily quotas.
+
+### Key Mitigation Strategies
+- **Split Prompts**: Prompt the agent in two phases (Phase 1: write table and showcase; Phase 2: integrate into game code).
+- **Conciseness Directive**: Instruct the agent to *"write highly compact code without comments and avoid conversational filler."*
+- **Incremental Expansion**: Ask the agent to scaffold the UI and 3 template drawings first, then write remaining drawing algorithms in small batches.
+
+---
+
+## Activity Verification
+
+### Live Demonstration Check
+- Search and filter controls update the cards layout in real time.
+- Clicking any card opens a dedicated overlay with detailed stats.
+- Clicking **Lysis** bursts the cell, disables the button for 0.5s, and restores it automatically.
+- Pathogens render in the game with wiggles, rotating spikes, and flagella.
+
+### Watermark Compliance
+- Confirm that all generated assets carry the APAF footer watermark.
+
+---
+
+<!-- APAF Bioinformatics | pathogen_activity_slide.qmd | Approved | 2026-06-14 -->
