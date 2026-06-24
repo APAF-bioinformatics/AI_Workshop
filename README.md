@@ -7,17 +7,24 @@ This guide provides instructions on how to install the Antigravity IDE, configur
 ## 📋 Setup Checklist (Start)
 
 Please complete the following checklist steps in order:
-- [ ] 1. Create a Google Account (see Section 1)
-- [ ] 2. Install Google Chrome Browser (see Section 2)
-- [ ] 3. Install Antigravity IDE (see Section 3)
-- [ ] 4. Download and Unzip the AI Workshop Repository (see Section 4)
-- [ ] 5. Log into the Google Account within Antigravity IDE
-- [ ] 6. Disable Telemetry in Antigravity IDE (see Section 5)
-- [ ] 7. Install & Configure IDE Plugins (see Section 6)
+- [ ] 1. Join Microsoft Teams Channel
+- [ ] 2. Create a Google Account 
+- [ ] 3. Install Google Chrome Browser 
+- [ ] 4. Install Antigravity IDE 
+- [ ] 5. Download and Unzip the AI Workshop Repository 
+- [ ] 6. Log into the Google Account within Antigravity IDE
+- [ ] 7. Disable Telemetry in Antigravity IDE 
+- [ ] 8. Install & Configure IDE Plugins 
+
+
+---
+## 1. Join the Microsoft Teams Channel
+
+Click here to join the teams channel: ![Join the teams channel](https://teams.microsoft.com/l/team/19%3As97eqpZq5KcPpynK_HYeGsVsR6Wq2lm2rAaJzOF75Lo1%40thread.tacv2/conversations?groupId=0c1d97b0-4788-4b3e-bbf0-2439a7239cfc&tenantId=82c514c1-a717-4087-be06-d40d2070ad52). This channel will be used during the hands-on part of the workshop for asking questions. You can also ask questions about installations here.
 
 ---
 
-## 1. How to Create a Google Account
+## 2. How to Create a Google Account
 
 1. Navigate to the Google Account creation page: [accounts.google.com/signup](https://accounts.google.com/signup)
 2. Choose a profile type (e.g., "For my personal use").
@@ -26,7 +33,7 @@ Please complete the following checklist steps in order:
 
 ---
 
-## 2. How to Install Google Chrome Browser
+## 3. How to Install Google Chrome Browser
 
 Antigravity IDE integration and web previews work best with Google Chrome.
 1. Navigate to the Google Chrome download page: [google.com/chrome](https://google.com/chrome)
@@ -39,7 +46,7 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 3. How to Install Antigravity IDE
+## 4. How to Install Antigravity IDE
 
 1. Navigate to the official download page: [antigravity.google](https://antigravity.google)
 2. **Important**: Download the **Antigravity IDE** installer compatible with your operating system (macOS, Windows, or Linux) which allows you to view and edit the workspace codes, and **not** the chat-only "vibe coding" version.
@@ -47,7 +54,7 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 4. How to Download the AI Workshop Repository
+## 5. How to Download the AI Workshop Repository
 
 1. Navigate to the GitHub repository page: [github.com/APAF-bioinformatics/AI_Workshop](https://github.com/APAF-bioinformatics/AI_Workshop)
 2. Click the green **Code** button on the right side and select **Download ZIP**.
@@ -56,7 +63,7 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 5. Log into the Antigravity IDE using your Google Account
+## 6. Log into the Antigravity IDE using your Google Account
 
 1. Open the Antigravity IDE.
 2. Click on the **Sign in** button in the top-right corner.
@@ -65,7 +72,7 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 6. How to Disable Telemetry in Antigravity IDE
+## 7. How to Disable Telemetry in Antigravity IDE
 
 To protect privacy and minimize network usage during the workshop, please disable telemetry:
 
@@ -79,7 +86,7 @@ To protect privacy and minimize network usage during the workshop, please disabl
 
 ---
 
-## 7. How to Install & Configure Plugins
+## 8. How to Install & Configure Plugins
 
 Follow these step-by-step visual instructions to enable and manage plugins in the Antigravity IDE:
 
@@ -119,13 +126,14 @@ In the **Build With Google Plugins** overlay, you can enable or manage the stand
 ## ✅ Final Verification Checklist (End)
 
 Verify that all setup items are successfully complete before starting the workshop:
-- [ ] 1. Google Account is created and signed in.
-- [ ] 2. Google Chrome is installed and set as default.
-- [ ] 3. Antigravity IDE is running and showing code workspace views.
-- [ ] 4. The workshop repository has been downloaded and unzipped.
-- [ ] 5. Log into the Google Account within Antigravity IDE
-- [ ] 6. Disable Telemetry in Antigravity IDE (see Section 5)
-- [ ] 7. Install & Configure IDE Plugins (see Section 6)
+- [ ] 1. Joined the Microsoft Teams Channel
+- [ ] 2. Google Account is created and signed in.
+- [ ] 3. Google Chrome is installed and set as default.
+- [ ] 4. Antigravity IDE is running and showing code workspace views.
+- [ ] 5. The workshop repository has been downloaded and unzipped.
+- [ ] 6. Log into the Google Account within Antigravity IDE
+- [ ] 7. Disable Telemetry in Antigravity IDE (see Section 5)
+- [ ] 8. Install & Configure IDE Plugins (see Section 6)
 ---
 
 <!-- APAF Bioinformatics | README.md | Approved | 2026-06-10 -->
