@@ -11,8 +11,9 @@ Please complete the following checklist steps in order:
 - [ ] 2. Install Google Chrome Browser (see Section 2)
 - [ ] 3. Install Antigravity IDE (see Section 3)
 - [ ] 4. Download and Unzip the AI Workshop Repository (see Section 4)
-- [ ] 5. Disable Telemetry in Antigravity IDE (see Section 5)
-- [ ] 6. Install & Configure IDE Plugins (see Section 6)
+- [ ] 5. Log into the Google Account within Antigravity IDE
+- [ ] 6. Disable Telemetry in Antigravity IDE (see Section 5)
+- [ ] 7. Install & Configure IDE Plugins (see Section 6)
 
 ---
 
@@ -55,7 +56,16 @@ Antigravity IDE integration and web previews work best with Google Chrome.
 
 ---
 
-## 5. How to Disable Telemetry in Antigravity IDE
+## 5. Log into the Antigravity IDE using your Google Account
+
+1. Open the Antigravity IDE.
+2. Click on the **Sign in** button in the top-right corner.
+3. Select **Google** as the sign-in method.
+4. Follow the instructions to log in with your Google Account.
+
+---
+
+## 6. How to Disable Telemetry in Antigravity IDE
 
 To protect privacy and minimize network usage during the workshop, please disable telemetry:
 
@@ -69,7 +79,7 @@ To protect privacy and minimize network usage during the workshop, please disabl
 
 ---
 
-## 6. How to Install & Configure Plugins
+## 7. How to Install & Configure Plugins
 
 Follow these step-by-step visual instructions to enable and manage plugins in the Antigravity IDE:
 
@@ -113,9 +123,9 @@ Verify that all setup items are successfully complete before starting the worksh
 - [ ] 2. Google Chrome is installed and set as default.
 - [ ] 3. Antigravity IDE is running and showing code workspace views.
 - [ ] 4. The workshop repository has been downloaded and unzipped.
-- [ ] 5. Telemetry (and marketing emails) has been disabled in Advanced Settings.
-- [ ] 6. Selected Google Plugins (e.g., Modern Web Guidance, Chrome DevTools) are enabled.
-
+- [ ] 5. Log into the Google Account within Antigravity IDE
+- [ ] 6. Disable Telemetry in Antigravity IDE (see Section 5)
+- [ ] 7. Install & Configure IDE Plugins (see Section 6)
 ---
 
 <!-- APAF Bioinformatics | README.md | Approved | 2026-06-10 -->
