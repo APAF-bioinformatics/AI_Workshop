@@ -113,7 +113,7 @@ Please load session handover skill and save session handover file in the session
 ## 6. Optional Advanced Polish & Extension Tasks
 
 ### Task F: Design System & Motion Guidelines (Impeccable)
-> To ensure the game feels premium and avoids the generic "AI slop" aesthetic, load and reference the custom `impeccable-design` skill in `.gemini/skills/impeccable-design/` during code generation:
+> To ensure the game feels premium and avoids the generic "AI slop" aesthetic, load and reference the custom `impeccable-design` skill ([impeccable](https://github.com/pbakaus/impeccable)) in `.gemini/skills/impeccable-design/` during code generation:
 > 1. **Motion Design:** Use natural easing curves (such as cubic-bezier deceleration: `cubic-bezier(0.22, 1, 0.36, 1)`) and precise timing (100–300ms for micro-interactions/transitions) for all animations. Avoid linear reveals or elastic bounces.
 > 2. **Color & Contrast:** Use the perceptually uniform OKLCH color space for palette definitions. Apply tinted neutrals matching the primary brand hue rather than generic raw grays.
 > 
