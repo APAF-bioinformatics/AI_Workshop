@@ -101,9 +101,16 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
   ```
   *(Note: Run this command in the console and then refresh the page to instantly unlock the Natural Killer and Neutrophil cells without playing through the stages.)*
 
+
 ---
 
-## 5. Optional Advanced Polish & Extension Tasks
+## 5. Session Handover
+
+Please load session handover skill and save session handover file in the session_handover directory with the suffix _YYYYMMDD_HHMM.md
+
+---
+
+## 6. Optional Advanced Polish & Extension Tasks
 
 ### Task F: Design System & Motion Guidelines (Impeccable)
 > To ensure the game feels premium and avoids the generic "AI slop" aesthetic, load and reference the custom `impeccable-design` skill in `.gemini/skills/impeccable-design/` during code generation:
@@ -234,6 +241,13 @@ Use your browser's Developer Tools Console (`F12` or `Cmd+Option+I` on Mac) to m
 * **Quota Note for Free Accounts:**
   > [!IMPORTANT]
   > Because compiling multiple Canvas visual render algorithms and structural layout handlers uses significant output tokens (~30k tokens), free-tier accounts may hit rate limits. To avoid quota issues, run the tasks in separate prompts as split above, ask the agent to write concise code, and request that comments and verbose explanations be omitted.
+
+---
+
+## 6. The Second Session Handover 
+
+Please load session handover skill and save session handover file in the session_handover directory with the suffix _YYYYMMDD_HHMM.md
+
 
 ---
 

@@ -16,7 +16,6 @@ Please complete the following checklist steps in order:
 - [ ] 7. Disable Telemetry in Antigravity IDE 
 - [ ] 8. Install & Configure IDE Plugins 
 
-
 ---
 ## 1. Join the Microsoft Teams Channel
 
