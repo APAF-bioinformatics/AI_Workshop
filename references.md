@@ -27,6 +27,9 @@ This file tracks all external URLs used in the AI Workshop (Immunity Protocol) p
 ## Video References
 - **Galaga Gameplay Video**: [YouTube link](https://www.youtube.com/watch?v=dvjapcHsqXY&time_continue=19&source_ve_path=NzY3NTg&embeds_referring_euri=https%3A%2F%2Fwww.google.com%2Fsearch%3Fsca_esv%3D524f1682bc7b6793%26rlz%3D1C5GCCM_en%26sxsrf%3DANbL-n6H73RSR79IkCvB3UmJFAm5QdMDgw%3A1781176457959%26udm)
 
+## Communication
+- **Microsoft Teams Channel**: [Teams Channel](https://teams.microsoft.com/l/team/19%3As97eqpZq5KcPpynK_HYeGsVsR6Wq2lm2rAaJzOF75Lo1%40thread.tacv2/conversations?groupId=0c1d97b0-4788-4b3e-bbf0-2439a7239cfc&tenantId=82c514c1-a717-4087-be06-d40d2070ad52)
+
 <!-- APAF Bioinformatics | references.md | Approved | 2026-06-14 -->
 
 

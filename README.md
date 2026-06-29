@@ -19,7 +19,7 @@ Please complete the following checklist steps in order:
 ---
 ## 1. Join the Microsoft Teams Channel
 
-Click here to join the teams channel: ![Join the teams channel](https://teams.microsoft.com/l/team/19%3As97eqpZq5KcPpynK_HYeGsVsR6Wq2lm2rAaJzOF75Lo1%40thread.tacv2/conversations?groupId=0c1d97b0-4788-4b3e-bbf0-2439a7239cfc&tenantId=82c514c1-a717-4087-be06-d40d2070ad52). This channel will be used during the hands-on part of the workshop for asking questions. You can also ask questions about installations here.
+Click here to join the teams channel: [Join the teams channel](https://teams.microsoft.com/l/team/19%3As97eqpZq5KcPpynK_HYeGsVsR6Wq2lm2rAaJzOF75Lo1%40thread.tacv2/conversations?groupId=0c1d97b0-4788-4b3e-bbf0-2439a7239cfc&tenantId=82c514c1-a717-4087-be06-d40d2070ad52). This channel will be used during the hands-on part of the workshop for asking questions. You can also ask questions about installations here.
 
 ---
 
